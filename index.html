@@ -459,6 +459,70 @@ body::before {
 /* TABLE SCROLL WRAPPER */
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
+/* CALENDAR */
+.cal-nav-btn {
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text); font-size: 18px;
+  transition: background 0.15s;
+}
+.cal-nav-btn:hover { background: rgba(255,255,255,0.14); }
+.cal-nav-btn:disabled { opacity: 0.25; cursor: default; }
+.cal-wd { font-size: 10px; color: var(--muted); text-align: center; padding: 2px 0; }
+.cal-cell {
+  aspect-ratio: 1; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 500;
+}
+.cal-cell.empty { background: transparent; }
+.cal-cell.rest { background: rgba(255,255,255,0.05); color: rgba(190,185,225,0.35); }
+.cal-cell.workout {
+  color: #fff; font-weight: 700; cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+  position: relative;
+}
+.cal-cell.workout::after {
+  content: '';
+  position: absolute;
+  inset: 0; border-radius: 8px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.25) 0%, transparent 60%);
+  pointer-events: none;
+}
+.cal-cell.workout:hover { transform: scale(1.12); }
+.cal-cell.workout.selected {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 2px #fff, 0 0 14px rgba(255,255,255,0.25);
+}
+.cal-insight-panel { margin-top: 14px; animation: fadeUp 0.18s ease; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+.cal-ins-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.cal-ins-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.cal-ins-date { font-size: 11px; color: var(--muted); }
+.cal-ins-chips { display: flex; flex-direction: column; gap: 7px; }
+.cal-chip {
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 13px; border-radius: 14px;
+  font-size: 12px; line-height: 1.4;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.cal-chip.pr     { background: rgba(250,199,75,0.12); border: 1px solid rgba(250,199,75,0.28); color: #FAC775; }
+.cal-chip.up     { background: rgba(74,222,128,0.10); border: 1px solid rgba(74,222,128,0.26); color: #4ade80; }
+.cal-chip.ready  { background: rgba(96,165,250,0.10); border: 1px solid rgba(96,165,250,0.26); color: #60a5fa; }
+.cal-chip.fail   { background: rgba(239,68,68,0.10);  border: 1px solid rgba(239,68,68,0.26);  color: #f87171; }
+.cal-chip.solid  { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: var(--muted); }
+.cal-chip-icon { font-size: 15px; flex-shrink: 0; }
+.cal-hint { text-align: center; font-size: 12px; color: var(--muted); padding: 14px 0 4px; }
+.cal-legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--muted); }
+.cal-legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
 /* FILTER PILLS */
 .filter-pill {
   background: rgba(255,255,255,0.07);
@@ -590,40 +654,47 @@ body::before {
     <div class="stat-grid">
       <div class="stat-card">
         <div class="stat-label">Total Sessions</div>
-        <div class="stat-value" style="color:#4ade80">9</div>
+        <div class="stat-value" style="color:#4ade80" id="ov-total">9</div>
         <div class="stat-sub">Since Apr 27, 2026</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Total Exercises</div>
-        <div class="stat-value" style="color:#60a5fa">47</div>
-        <div class="stat-sub">Across all sessions</div>
+        <div class="stat-label">This Month</div>
+        <div class="stat-value" style="color:#60a5fa" id="ov-month">—</div>
+        <div class="stat-sub" id="ov-month-sub">Sessions</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Muscle Groups</div>
-        <div class="stat-value" style="color:#c084fc">6</div>
-        <div class="stat-sub">Chest · Back · Legs · Shoulders · Arms · Core</div>
+        <div class="stat-label">Last Session</div>
+        <div class="stat-value" style="font-size:18px; padding-top:6px;" id="ov-last">—</div>
+        <div class="stat-sub" id="ov-last-sub"></div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Avg Rest Days</div>
         <div class="stat-value" style="color:#fb923c">2.6</div>
         <div class="stat-sub">Between sessions</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Last Session</div>
-        <div class="stat-value" style="font-size:18px; padding-top:6px;">May 20</div>
-        <div class="stat-sub">Back day — Session 9</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">PRs Set</div>
-        <div class="stat-value" style="color:#f472b6">12</div>
-        <div class="stat-sub">Personal bests tracked</div>
-      </div>
     </div>
 
-    <div class="section-title">📅 Session Timeline</div>
-    <div class="timeline-wrap">
-      <div class="timeline-line"></div>
-      <div id="overview-timeline"></div>
+    <div class="section-title">📅 Session Calendar</div>
+    <div class="chart-container" style="padding:18px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <button class="cal-nav-btn" id="cal-prev" onclick="calChangeMonth(-1)">‹</button>
+        <div style="font-size:14px; font-weight:600;" id="cal-month-label"></div>
+        <button class="cal-nav-btn" id="cal-next" onclick="calChangeMonth(1)">›</button>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:4px;">
+        <div class="cal-wd">M</div><div class="cal-wd">T</div><div class="cal-wd">W</div>
+        <div class="cal-wd">T</div><div class="cal-wd">F</div><div class="cal-wd">S</div><div class="cal-wd">S</div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px;" id="cal-grid"></div>
+      <div id="cal-insight-panel"></div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.08);">
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#4ade80"></div>Chest</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#60a5fa"></div>Back</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#fb923c"></div>Legs</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#c084fc"></div>Shoulders</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#f472b6"></div>Arms</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#34d399"></div>Core</div>
+      </div>
     </div>
   </div>
 
@@ -913,22 +984,183 @@ function showTab(id, btn) {
 // ============================================================
 // OVERVIEW
 // ============================================================
+// ============================================================
+// CALENDAR
+// ============================================================
+const MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+let calYear, calMonth, calSelected = null;
+
 function initOverview() {
-  const wrap = document.getElementById('overview-timeline');
-  SESSIONS.forEach(s => {
-    const exerciseCount = s.exercises.length;
-    const color = FOCUS_COLORS[s.focus] || '#888';
-    wrap.innerHTML += `
-      <div class="timeline-item">
-        <div class="timeline-dot" style="background:${color}"></div>
-        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-          <span style="font-size:13px; font-weight:600;">Session ${s.id}</span>
-          <span style="font-size:12px; color:var(--muted);">${fmtDate(s.date)}</span>
-          <span class="session-badge" style="background:${color}22; color:${color}; border:1px solid ${color}44; font-size:11px; padding:2px 8px; border-radius:6px;">${s.focus}</span>
-          <span style="font-size:12px; color:var(--muted);">${exerciseCount} exercises</span>
-        </div>
-      </div>`;
+  // Stat cards
+  const now = new Date();
+  const thisMonth = SESSIONS.filter(s => {
+    const d = new Date(s.date);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+  const last = SESSIONS[SESSIONS.length - 1];
+  const lastD = new Date(last.date);
+  document.getElementById('ov-month').textContent = thisMonth;
+  document.getElementById('ov-last').textContent = lastD.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  document.getElementById('ov-last-sub').textContent = `${last.focus} — Session ${last.id}`;
+
+  // Build session date map
+  window._calMap = {};
+  SESSIONS.forEach(s => { window._calMap[s.date] = s; });
+
+  // Start on most recent session's month
+  const latestDate = new Date(last.date);
+  calYear = latestDate.getFullYear();
+  calMonth = latestDate.getMonth();
+  calRender();
+}
+
+function calRender() {
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  document.getElementById('cal-month-label').textContent = `${MONTHS_LONG[calMonth]} ${calYear}`;
+
+  const firstDay = new Date(calYear, calMonth, 1);
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  let startDow = firstDay.getDay();
+  startDow = startDow === 0 ? 6 : startDow - 1;
+
+  for (let i = 0; i < startDow; i++) {
+    const e = document.createElement('div'); e.className = 'cal-cell empty'; grid.appendChild(e);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const cell = document.createElement('div');
+    const s = window._calMap[dateStr];
+    if (s) {
+      cell.className = 'cal-cell workout' + (calSelected === dateStr ? ' selected' : '');
+      cell.style.background = FOCUS_COLORS[s.focus] || '#888';
+      cell.textContent = d;
+      cell.onclick = () => calTap(dateStr, cell);
+    } else {
+      cell.className = 'cal-cell rest';
+      cell.textContent = d;
+    }
+    grid.appendChild(cell);
+  }
+
+  if (calSelected && window._calMap[calSelected]) {
+    calShowInsights(calSelected);
+  } else {
+    document.getElementById('cal-insight-panel').innerHTML = '<div class="cal-hint">Tap a workout day for highlights</div>';
+  }
+
+  // Disable nav beyond first/last session months
+  const allDates = SESSIONS.map(s => new Date(s.date));
+  const minDate = new Date(Math.min(...allDates));
+  const maxDate = new Date(Math.max(...allDates));
+  document.getElementById('cal-prev').disabled = calYear === minDate.getFullYear() && calMonth === minDate.getMonth();
+  document.getElementById('cal-next').disabled = calYear === maxDate.getFullYear() && calMonth === maxDate.getMonth();
+}
+
+function calTap(dateStr, cell) {
+  if (calSelected === dateStr) { calSelected = null; calRender(); return; }
+  calSelected = dateStr;
+  document.querySelectorAll('.cal-cell.workout').forEach(c => c.classList.remove('selected'));
+  cell.classList.add('selected');
+  calShowInsights(dateStr);
+}
+
+function calChangeMonth(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0)  { calMonth = 11; calYear--; }
+  calSelected = null;
+  calRender();
+}
+
+function calShowInsights(dateStr) {
+  const s = window._calMap[dateStr];
+  const color = FOCUS_COLORS[s.focus] || '#888';
+  const insights = calGenInsights(s);
+  const chips = insights.map(i =>
+    `<div class="cal-chip ${i.type}"><span class="cal-chip-icon">${i.icon}</span><span>${i.text}</span></div>`
+  ).join('');
+  document.getElementById('cal-insight-panel').innerHTML = `
+    <div class="cal-insight-panel">
+      <div class="cal-ins-header">
+        <div class="cal-ins-title" style="color:${color};">Session ${s.id} · ${s.focus}</div>
+        <div class="cal-ins-date">${fmtDate(s.date)}</div>
+      </div>
+      <div class="cal-ins-chips">${chips}</div>
+    </div>`;
+}
+
+function calGenInsights(s) {
+  const insights = [];
+  const sessionIdx = SESSIONS.findIndex(x => x.id === s.id);
+
+  // Build history of all exercises up to this session
+  const history = {};
+  for (let i = 0; i < sessionIdx; i++) {
+    SESSIONS[i].exercises.forEach(ex => {
+      if (!history[ex.name]) history[ex.name] = [];
+      history[ex.name].push({ sets: ex.sets, assisted: ex.assisted });
+    });
+  }
+
+  let prCount = 0, overloadCount = 0, failNames = [], readyNames = [];
+
+  s.exercises.forEach(ex => {
+    const valid = ex.sets.filter(st => !st.fail && st.r > 0);
+    if (!valid.length) { failNames.push(ex.name); return; }
+    const failed = ex.sets.some(st => st.fail);
+    if (failed) failNames.push(ex.name);
+
+    const curMaxW = Math.max(...valid.map(st => st.w));
+    const curMaxR = Math.max(...valid.map(st => st.r));
+    const curAvgR = valid.reduce((a,st) => a + st.r, 0) / valid.length;
+
+    const prev = history[ex.name];
+    if (prev && prev.length > 0) {
+      const lastPrev = prev[prev.length - 1];
+      const prevValid = lastPrev.sets.filter(st => !st.fail && st.r > 0);
+      if (!prevValid.length) return;
+      const prevMaxW = Math.max(...prevValid.map(st => st.w));
+      const prevAvgR = prevValid.reduce((a,st) => a + st.r, 0) / prevValid.length;
+
+      if (ex.assisted) {
+        if (curMaxW < prevMaxW) overloadCount++;
+      } else {
+        if (curMaxW > prevMaxW) overloadCount++;
+        else if (curAvgR > prevAvgR + 1 && curMaxW === prevMaxW) overloadCount++;
+      }
+      if (!ex.assisted && curAvgR >= 13 && curMaxW > 0) readyNames.push(ex.name);
+    } else {
+      // First time doing this exercise — check if PR vs other sessions (in case exercise appears in different focus days)
+    }
+
+    // PR check: is this set a new best across all sessions?
+    const allPrev = (history[ex.name] || []).flatMap(h => h.sets.filter(st => !st.fail && st.r > 0));
+    const allPrevMaxW = allPrev.length ? Math.max(...allPrev.map(st => st.w)) : -1;
+    const allPrevMaxR = allPrev.length ? Math.max(...allPrev.map(st => st.r)) : -1;
+    if (curMaxW > allPrevMaxW || (curMaxW === allPrevMaxW && curMaxR > allPrevMaxR)) {
+      prCount++;
+    }
   });
+
+  // Build up to 3 crisp insights — prioritise: PRs > overload > failures > ready
+  if (prCount > 0) {
+    insights.push({ type:'pr', icon:'🏆', text: prCount === 1 ? `New personal record hit this session` : `${prCount} new personal records this session` });
+  }
+  if (overloadCount > 0) {
+    insights.push({ type:'up', icon:'📈', text: overloadCount === 1 ? `Progressive overload on 1 exercise` : `Progressive overload on ${overloadCount} exercises` });
+  }
+  if (failNames.length > 0) {
+    insights.push({ type:'fail', icon:'⚠️', text: `Couldn't complete: ${failNames.slice(0,2).join(', ')}${failNames.length > 2 ? ' +more' : ''}` });
+  }
+  if (insights.length < 3 && readyNames.length > 0) {
+    insights.push({ type:'ready', icon:'⚡', text: `Ready to go heavier: ${readyNames[0]}` });
+  }
+  if (insights.length === 0) {
+    const totalReps = s.exercises.reduce((a,e) => a + e.sets.filter(st=>!st.fail).reduce((b,st)=>b+st.r,0), 0);
+    insights.push({ type:'solid', icon:'💪', text: `${totalReps} total reps — solid session` });
+  }
+  return insights.slice(0, 3);
 }
 
 // ============================================================
@@ -936,7 +1168,7 @@ function initOverview() {
 // ============================================================
 function initSessions() {
   const list = document.getElementById('sessions-list');
-  SESSIONS.forEach(s => {
+  [...SESSIONS].reverse().forEach(s => {
     const color = FOCUS_COLORS[s.focus] || '#888';
     const totalSets = s.exercises.reduce((a,e) => a + e.sets.length, 0);
 
