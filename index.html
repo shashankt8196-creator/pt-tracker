@@ -459,6 +459,33 @@ body::before {
 /* TABLE SCROLL WRAPPER */
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
+/* FILTER PILLS */
+.filter-pill {
+  background: rgba(255,255,255,0.07);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: var(--muted);
+  padding: 7px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+.filter-pill:hover {
+  background: rgba(255,255,255,0.12);
+  color: var(--text);
+  border-color: rgba(255,255,255,0.22);
+}
+.filter-pill.active {
+  background: rgba(255,255,255,0.16);
+  border-color: rgba(255,255,255,0.28);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.25);
+}
+
 /* ============================================================
    MOBILE
    ============================================================ */
@@ -661,8 +688,10 @@ body::before {
   <!-- ======= RECORDS ======= -->
   <div id="tab-records" class="tab-panel">
     <div class="section-title">🏆 Personal Records</div>
-    <p style="font-size:13px; color:var(--muted); margin-bottom:20px;">Your best ever performance per exercise. Keep pushing these!</p>
+    <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">Your best ever performance per exercise. Keep pushing these!</p>
+    <div id="pr-filters" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;"></div>
     <div class="pr-grid" id="pr-grid"></div>
+    <div id="pr-empty" style="display:none; color:var(--muted); font-size:14px; padding:20px 0; text-align:center;">No records for this group yet.</div>
   </div>
 
   <!-- ======= INSIGHTS ======= -->
@@ -1313,11 +1342,14 @@ function initBalanceTab() {
 // ============================================================
 // RECORDS TAB
 // ============================================================
+let prData = {}; // { name: {weight, reps, muscle, date, session} }
+let activeFilter = 'All';
+
 function initRecordsTab() {
   const grid = document.getElementById('pr-grid');
-  if (grid.children.length > 0) return;
+  if (Object.keys(prData).length > 0) return;
 
-  const prMap = {};
+  // Build PR map
   SESSIONS.forEach(s => {
     s.exercises.forEach(ex => {
       const validSets = ex.sets.filter(st => !st.fail && st.r > 0);
@@ -1326,15 +1358,59 @@ function initRecordsTab() {
       const maxR = Math.max(...validSets.map(st=>st.r));
       const maxWset = validSets.filter(st=>st.w===maxW);
       const maxRatW = Math.max(...maxWset.map(st=>st.r));
-
-      if (!prMap[ex.name] || maxW > prMap[ex.name].weight || (maxW === prMap[ex.name].weight && maxRatW > prMap[ex.name].reps)) {
-        prMap[ex.name] = { weight: maxW, reps: maxR, muscle: ex.muscle, date: s.date, session: s.id };
+      if (!prData[ex.name] || maxW > prData[ex.name].weight || (maxW === prData[ex.name].weight && maxRatW > prData[ex.name].reps)) {
+        prData[ex.name] = { weight: maxW, reps: maxR, muscle: ex.muscle, date: s.date, session: s.id };
       }
     });
   });
 
-  Object.keys(prMap).sort().forEach(name => {
-    const pr = prMap[name];
+  // Build filter pills
+  const muscles = ['All', ...new Set(Object.values(prData).map(p => p.muscle))].sort((a,b) => a==='All'?-1:b==='All'?1:a.localeCompare(b));
+  const filtersEl = document.getElementById('pr-filters');
+  const muscleColors = {
+    'Chest':'#4ade80','Back':'#60a5fa','Legs':'#fb923c',
+    'Shoulders':'#c084fc','Arms':'#f472b6','Core':'#34d399',
+    'Biceps':'#f9a8d4','Triceps':'#a78bfa'
+  };
+
+  muscles.forEach(m => {
+    const pill = document.createElement('button');
+    pill.className = 'filter-pill' + (m === 'All' ? ' active' : '');
+    pill.textContent = m === 'All' ? '🏅 All' : m;
+    if (m !== 'All' && muscleColors[m]) {
+      pill.style.setProperty('--pill-color', muscleColors[m]);
+    }
+    pill.onclick = () => {
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      activeFilter = m;
+      renderPRCards();
+    };
+    filtersEl.appendChild(pill);
+  });
+
+  renderPRCards();
+}
+
+function renderPRCards() {
+  const grid = document.getElementById('pr-grid');
+  const empty = document.getElementById('pr-empty');
+  grid.innerHTML = '';
+
+  const filtered = Object.keys(prData)
+    .filter(name => activeFilter === 'All' || prData[name].muscle === activeFilter)
+    .sort();
+
+  if (filtered.length === 0) {
+    grid.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+  grid.style.display = '';
+  empty.style.display = 'none';
+
+  filtered.forEach(name => {
+    const pr = prData[name];
     const color = MUSCLE_COLORS[pr.muscle] || '#888';
     const mc = muscleClass(pr.muscle);
     const valueHTML = pr.weight > 0
