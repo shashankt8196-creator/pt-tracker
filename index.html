@@ -3,7 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shashank's PT Tracker</title>
+<title>My PT</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="My PT">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAYAAAA9zQYyAAAFC0lEQVR4nO3dT27bRhiG8W8I7rtJT1Cgrn0Ey84pmsA5SBNbWbcHqW2prSX3FO0R0lUPkEibnmC6EBjIkij+0ZAzfPn8AgLJQhYzfPJhRAmRu3n7yWKa/37uo55Aj5xzsU+hFzdvP0X7i7qbN/0GPf9jPAHvGkvQu27e9Bd43seTjDlimP32dPH1+ncdd6dBEzJ2FXF3FXYnQRMyqnQVdh7yp80IGQ0VYb8LFHaQCU3IONU8UNiZebNTDmJGSPOnC39Kj5mZs7bH7ImYEd58ceHbNtlqyzF7+oGQ0an5YjMs3/34T6MtSNb03wAxo0/zxblv0mfW5Ic/EjMimC3qb21rB03MiKlu1LXuchAzUjBbnFfeAWm05QBSV/mi8HHBdEY6ZsvjLxKP3od+IGYk6HF5XnqfunTL8bA4I2Yk63F5eNiyh4aUg0EznTEEh6Z07kgXA7bb796Evl8ynTEcD88vpzR7aEh5ETTTGUO0PaXzzf07YOg2HX99p/B++T3TGYP18HzmnZnlRsZQwYeToCYzM/v1me0Ghu/+zzPPhIaUjHscUMKEhhTnvWf/3JOx/ne6fWJCQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQwpBQ0oe+wRq+LfFY74LfhaivPeN19c5l+z6pj6h28R8yuNGpU3MpzyuDykHfeqiJbvoKTg1ylSjTjXoUIuV5KLHFirGFKNONWigFYKGFIKGFIKGFIKGFIKGFIKGlCG89d3Eeuv3r6KdxXDIrZfShF5X/BkvSa6XStBlF0PiInVAdr1UggbMTG8Pfcx/sU/Aex/1+Z1z30Q9gR6MIejoIafCey+/Fmw5IIWgISV3zsU+hz2x95oYLiY0pBA0pBA0pMjftivuvY7hllWVrbWIfSqdkQ+6MIY3FcCWA2JUgi766KPERyI7ILteKkGb7V+MwV+cjkmul9oeWuKi9EhuvZQmNEDQ0ELQkELQkELQkELQkELQkJJk0KG+wyPl7wKJSXl9kwza7PTFSnGxU6K6vskGbdZ+0VJd7NQorq8zM90Px2J0kp7QQFMEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSkEDSnZT68/u9gnAYSSUTOUsOWAFIKGlMzM7D37aAh4//qzY0JDSu746nqIcH5rD/3hmm0HhqvoNzejYyjYdPxiD/3h+gt1Y3C2u+VFIaRkzjbDujhumdIYkNvrL26739y4y4Eh2+n34Jbj9oopjfQd6pQ9NKSUBs2URsrK+syclf+6u1oRNZJzd7VyZc1WbjmIGimp6pE9NKRk5s2qjrsJUxrx3U1WrqrV2hOaqBFT3f723ik8dkyJGhFMJytXt9HGe2iiRp+a9uamk1XrJ/vlr2954xydaDs4s/objv1jOlkzrRHcpqt2Tda6y3HsmF4SNcKZXq4r72QcO9zHy3Wwk/n571dsQdDKx0CDMWjQBcJGXaFCLnQSdIGwUSZ0yIVOgy4QNgpdhVzoJehtxD0+XUe87X8zhXb8Hs3EUwAAAABJRU5ErkJggg==">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1732,33 +1736,44 @@ function initInsightsTab() {
 
   // --- Rest Between Sessions ---
   const dates = SESSIONS.map(s => new Date(s.date));
-  let restHTML = '';
   let totalRest = 0;
   let restBetween = [];
-  for (let i=1; i<dates.length; i++) {
-    const days = Math.round((dates[i]-dates[i-1])/(1000*60*60*24));
-    totalRest += days;
-    restBetween.push(days);
-    const sameBodyPart = SESSIONS[i].focus === SESSIONS[i-1].focus ||
-      (SESSIONS[i].focus.includes(SESSIONS[i-1].focus)) ||
-      (SESSIONS[i-1].focus.includes(SESSIONS[i].focus));
-    let cls, icon, note;
-    if (days === 1 && sameBodyPart) { cls='warn'; icon='⚠️'; note='Back-to-back same muscle group — watch for overuse'; }
-    else if (days === 1) { cls='ok'; icon='💪'; note='Different muscle groups — smart scheduling!'; }
-    else if (days <= 3) { cls='ok'; icon='✅'; note='Good recovery window'; }
-    else { cls='great'; icon='🔵'; note='Extended rest — fully recovered'; }
-    restHTML += `
-      <div class="recovery-row">
-        <div style="min-width:220px;">
-          <div style="font-size:13px; font-weight:600;">Session ${i} → Session ${i+1}</div>
-          <div style="font-size:11px; color:var(--muted); margin-top:2px;">${fmtDate(SESSIONS[i-1].date)} · <span style="color:${FOCUS_COLORS[SESSIONS[i-1].focus]||'#888'}">${SESSIONS[i-1].focus}</span> &nbsp;→&nbsp; ${fmtDate(SESSIONS[i].date)} · <span style="color:${FOCUS_COLORS[SESSIONS[i].focus]||'#888'}">${SESSIONS[i].focus}</span></div>
-        </div>
-        <span class="recovery-days ${cls}">${days}d</span>
-        <span class="flag-icon">${icon}</span>
-        <span style="font-size:12px; color:var(--muted);">${note}</span>
+
+  // Build compact visual chain
+  let chainHTML = '<div style="display:flex; flex-wrap:wrap; align-items:center; gap:0; row-gap:10px;">';
+  for (let i = 0; i < SESSIONS.length; i++) {
+    const s = SESSIONS[i];
+    const color = FOCUS_COLORS[s.focus] || '#888';
+    chainHTML += `
+      <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
+        <div style="width:32px; height:32px; border-radius:50%; background:${color}22; border:2px solid ${color}; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:${color};">${s.id}</div>
+        <div style="font-size:9px; color:var(--muted); white-space:nowrap;">${s.focus.slice(0,3)}</div>
       </div>`;
+    if (i < SESSIONS.length - 1) {
+      const days = Math.round((dates[i+1]-dates[i])/(1000*60*60*24));
+      totalRest += days;
+      restBetween.push(days);
+      const sameGroup = SESSIONS[i+1].focus === s.focus;
+      const restColor = (days === 1 && sameGroup) ? '#ef4444' : days <= 3 ? '#4ade80' : days >= 7 ? '#60a5fa' : '#fb923c';
+      chainHTML += `
+        <div style="display:flex; flex-direction:column; align-items:center; gap:2px; padding:0 2px; margin-bottom:14px;">
+          <div style="height:2px; width:22px; background:${restColor}; opacity:0.5; border-radius:1px;"></div>
+          <div style="font-size:9px; font-weight:600; color:${restColor};">${days}d</div>
+        </div>`;
+    }
   }
-  restEl.innerHTML = restHTML;
+  chainHTML += '</div>';
+
+  // Legend
+  chainHTML += `
+    <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.08); font-size:11px; color:var(--muted);">
+      <span><span style="color:#4ade80">●</span> 1–3d good</span>
+      <span><span style="color:#fb923c">●</span> 4–6d long</span>
+      <span><span style="color:#60a5fa">●</span> 7d+ fully recovered</span>
+      <span><span style="color:#ef4444">●</span> back-to-back same muscle</span>
+    </div>`;
+
+  restEl.innerHTML = chainHTML;
   const avgRest = (totalRest / restBetween.length).toFixed(1);
 
   // Recovery summary
