@@ -1091,76 +1091,94 @@ function calShowInsights(dateStr) {
 }
 
 function calGenInsights(s) {
-  const insights = [];
   const sessionIdx = SESSIONS.findIndex(x => x.id === s.id);
-
-  // Build history of all exercises up to this session
   const history = {};
   for (let i = 0; i < sessionIdx; i++) {
     SESSIONS[i].exercises.forEach(ex => {
       if (!history[ex.name]) history[ex.name] = [];
-      history[ex.name].push({ sets: ex.sets, assisted: ex.assisted });
+      history[ex.name].push({ sets: ex.sets, assisted: !!ex.assisted });
     });
   }
 
-  let prCount = 0, overloadCount = 0, failNames = [], readyNames = [];
+  const candidates = [];
 
   s.exercises.forEach(ex => {
     const valid = ex.sets.filter(st => !st.fail && st.r > 0);
-    if (!valid.length) { failNames.push(ex.name); return; }
     const failed = ex.sets.some(st => st.fail);
-    if (failed) failNames.push(ex.name);
+
+    if (failed && valid.length === 0) {
+      candidates.push({ type:'fail', icon:'⚠️', text:`${ex.name} — couldn't complete. Keep practising the movement`, priority:3 });
+      return;
+    }
+    if (failed) {
+      candidates.push({ type:'fail', icon:'⚠️', text:`${ex.name} — failed on last set. Might be slightly too heavy`, priority:2 });
+    }
+    if (!valid.length) return;
 
     const curMaxW = Math.max(...valid.map(st => st.w));
     const curMaxR = Math.max(...valid.map(st => st.r));
-    const curAvgR = valid.reduce((a,st) => a + st.r, 0) / valid.length;
+    const curAvgR = Math.round(valid.reduce((a,st) => a + st.r, 0) / valid.length);
+    const allPrev = (history[ex.name] || []).flatMap(h => h.sets.filter(st => !st.fail && st.r > 0));
+    const lastPrevSets = history[ex.name] ? history[ex.name][history[ex.name].length-1]?.sets.filter(st=>!st.fail&&st.r>0) : [];
+    const lastAvgR = lastPrevSets && lastPrevSets.length ? Math.round(lastPrevSets.reduce((a,st)=>a+st.r,0)/lastPrevSets.length) : 0;
 
-    const prev = history[ex.name];
-    if (prev && prev.length > 0) {
-      const lastPrev = prev[prev.length - 1];
-      const prevValid = lastPrev.sets.filter(st => !st.fail && st.r > 0);
-      if (!prevValid.length) return;
-      const prevMaxW = Math.max(...prevValid.map(st => st.w));
-      const prevAvgR = prevValid.reduce((a,st) => a + st.r, 0) / prevValid.length;
+    if (allPrev.length > 0) {
+      const prevMaxW = Math.max(...allPrev.map(st => st.w));
+      const prevMaxR = Math.max(...allPrev.map(st => st.r));
 
       if (ex.assisted) {
-        if (curMaxW < prevMaxW) overloadCount++;
+        if (curMaxW < prevMaxW) {
+          candidates.push({ type:'pr', icon:'🏆', text:`${ex.name} — assist down to ${curMaxW}kg (was ${prevMaxW}kg). You're getting stronger!`, priority:5 });
+        } else if (curMaxR > prevMaxR) {
+          candidates.push({ type:'up', icon:'📈', text:`${ex.name} — ${curMaxR} reps at ${curMaxW}kg assist, up from ${prevMaxR}`, priority:4 });
+        }
+      } else if (curMaxW > 0) {
+        if (curMaxW > prevMaxW) {
+          candidates.push({ type:'pr', icon:'🏆', text:`${ex.name} — lifted ${curMaxW}kg, up from ${prevMaxW}kg. New PR!`, priority:5 });
+        } else if (curMaxR > prevMaxR) {
+          candidates.push({ type:'pr', icon:'🏆', text:`${ex.name} — ${curMaxR} reps at ${curMaxW}kg. New rep PR!`, priority:5 });
+        } else if (curAvgR > lastAvgR + 1) {
+          candidates.push({ type:'up', icon:'📈', text:`${ex.name} — avg ${curAvgR} reps (was ${lastAvgR} last time)`, priority:4 });
+        } else if (curAvgR >= 13) {
+          candidates.push({ type:'ready', icon:'⚡', text:`${ex.name} — ${curAvgR} reps avg at ${curMaxW}kg. Ask PT to bump the weight`, priority:1 });
+        }
       } else {
-        if (curMaxW > prevMaxW) overloadCount++;
-        else if (curAvgR > prevAvgR + 1 && curMaxW === prevMaxW) overloadCount++;
+        if (curMaxR > prevMaxR) {
+          candidates.push({ type:'pr', icon:'🏆', text:`${ex.name} — ${curMaxR} reps. Best ever for this exercise!`, priority:5 });
+        } else if (curAvgR > lastAvgR + 1) {
+          candidates.push({ type:'up', icon:'📈', text:`${ex.name} — avg ${curAvgR} reps, up from ${lastAvgR} last session`, priority:4 });
+        }
       }
-      if (!ex.assisted && curAvgR >= 13 && curMaxW > 0) readyNames.push(ex.name);
     } else {
-      // First time doing this exercise — check if PR vs other sessions (in case exercise appears in different focus days)
-    }
-
-    // PR check: is this set a new best across all sessions?
-    const allPrev = (history[ex.name] || []).flatMap(h => h.sets.filter(st => !st.fail && st.r > 0));
-    const allPrevMaxW = allPrev.length ? Math.max(...allPrev.map(st => st.w)) : -1;
-    const allPrevMaxR = allPrev.length ? Math.max(...allPrev.map(st => st.r)) : -1;
-    if (curMaxW > allPrevMaxW || (curMaxW === allPrevMaxW && curMaxR > allPrevMaxR)) {
-      prCount++;
+      if (curMaxW > 0) {
+        candidates.push({ type:'solid', icon:'🎯', text:`${ex.name} — first time: ${curMaxW}kg × ${curMaxR} reps. Baseline set`, priority:0 });
+      }
     }
   });
 
-  // Build up to 3 crisp insights — prioritise: PRs > overload > failures > ready
-  if (prCount > 0) {
-    insights.push({ type:'pr', icon:'🏆', text: prCount === 1 ? `New personal record hit this session` : `${prCount} new personal records this session` });
+  candidates.sort((a, b) => b.priority - a.priority);
+
+  // Pick top 2, prefer variety of types
+  const picked = [];
+  const usedTypes = new Set();
+  for (const c of candidates) {
+    if (picked.length >= 2) break;
+    if (!usedTypes.has(c.type)) { picked.push(c); usedTypes.add(c.type); }
   }
-  if (overloadCount > 0) {
-    insights.push({ type:'up', icon:'📈', text: overloadCount === 1 ? `Progressive overload on 1 exercise` : `Progressive overload on ${overloadCount} exercises` });
+  for (const c of candidates) {
+    if (picked.length >= 2) break;
+    if (!picked.includes(c)) picked.push(c);
   }
-  if (failNames.length > 0) {
-    insights.push({ type:'fail', icon:'⚠️', text: `Couldn't complete: ${failNames.slice(0,2).join(', ')}${failNames.length > 2 ? ' +more' : ''}` });
+
+  // Fallbacks to always get 2
+  const totalReps = s.exercises.reduce((a,e) => a + e.sets.filter(st=>!st.fail).reduce((b,st)=>b+st.r,0), 0);
+  if (picked.length === 0) {
+    picked.push({ type:'solid', icon:'💪', text:`${totalReps} total reps across ${s.exercises.length} exercises` });
+    picked.push({ type:'solid', icon:'🎯', text:`${s.focus} session complete — consistency is the goal` });
+  } else if (picked.length === 1) {
+    picked.push({ type:'solid', icon:'💪', text:`${totalReps} total reps across ${s.exercises.length} exercises` });
   }
-  if (insights.length < 3 && readyNames.length > 0) {
-    insights.push({ type:'ready', icon:'⚡', text: `Ready to go heavier: ${readyNames[0]}` });
-  }
-  if (insights.length === 0) {
-    const totalReps = s.exercises.reduce((a,e) => a + e.sets.filter(st=>!st.fail).reduce((b,st)=>b+st.r,0), 0);
-    insights.push({ type:'solid', icon:'💪', text: `${totalReps} total reps — solid session` });
-  }
-  return insights.slice(0, 3);
+  return picked.slice(0, 2);
 }
 
 // ============================================================
