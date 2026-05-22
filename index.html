@@ -758,7 +758,6 @@ body::before {
       <div class="section-title" style="font-size:13px;">Muscle Balance Radar</div>
       <div class="chart-wrap" style="height:320px;"><canvas id="radarChart"></canvas></div>
     </div>
-    <div id="balance-insight" class="insight-card" style="margin-top:0;"></div>
   </div>
 
   <!-- ======= RECORDS ======= -->
@@ -774,25 +773,26 @@ body::before {
   <div id="tab-insights" class="tab-panel">
     <div class="section-title">⚡ Smart Insights</div>
 
+    <div class="insight-card" style="margin-bottom:20px;">
+      <div class="insight-card-title">🟢 Muscle Recovery Status</div>
+      <div id="recovery-status"></div>
+    </div>
+
     <div class="insight-grid">
       <div class="insight-card">
         <div class="insight-card-title">🚀 Progressive Overload Flags</div>
         <div id="overload-flags"></div>
       </div>
       <div class="insight-card">
-        <div class="insight-card-title">😴 Recovery Analysis</div>
+        <div class="insight-card-title">😴 Rest & Recovery</div>
         <div id="recovery-analysis"></div>
+        <div id="rest-timeline" style="margin-top:16px;"></div>
       </div>
     </div>
 
     <div class="insight-card" style="margin-bottom:20px;">
       <div class="insight-card-title">💡 Recommendations</div>
       <div id="recommendations"></div>
-    </div>
-
-    <div class="insight-card">
-      <div class="insight-card-title">📆 Rest Days Between Sessions</div>
-      <div id="rest-timeline"></div>
     </div>
   </div>
 
@@ -1362,11 +1362,37 @@ function renderProgressChart() {
   const totalSessions = data.length;
   const latestSess = data[data.length-1];
   const prevSess = data.length > 1 ? data[data.length-2] : null;
-  const latestAvgReps = latestSess.sets.filter(s=>!s.fail&&s.r>0).reduce((a,s,_,arr)=>a+s.r/arr.length,0);
-  const prevAvgReps = prevSess ? prevSess.sets.filter(s=>!s.fail&&s.r>0).reduce((a,s,_,arr)=>a+s.r/arr.length,0) : null;
-  const trend = prevAvgReps !== null
-    ? (latestAvgReps > prevAvgReps ? '📈 Improving' : latestAvgReps < prevAvgReps ? '📉 Dropped' : '➡️ Steady')
-    : '🆕 First session';
+  function validSets(sess) { return sess.sets.filter(s => !s.fail && s.r > 0); }
+  function avgVal(sets) { return sets.reduce((a,s,_,arr) => a + s.r/arr.length, 0); }
+  function avgVolume(sets) { return sets.reduce((a,s,_,arr) => a + (s.w * s.r)/arr.length, 0); }
+  function avgAssist(sets) { return sets.reduce((a,s,_,arr) => a + s.w/arr.length, 0); }
+
+  let trend;
+  if (!prevSess) {
+    trend = '🆕 First session';
+  } else if (isAssisted) {
+    const latestAssist = avgAssist(validSets(latestSess));
+    const prevAssist   = avgAssist(validSets(prevSess));
+    const latestReps   = avgVal(validSets(latestSess));
+    const prevReps     = avgVal(validSets(prevSess));
+    if (latestAssist < prevAssist)      trend = '📈 Stronger';
+    else if (latestAssist > prevAssist) trend = '📉 More assist';
+    else if (latestReps > prevReps)     trend = '📈 More reps';
+    else if (latestReps < prevReps)     trend = '📉 Fewer reps';
+    else                                trend = '➡️ Steady';
+  } else if (isBW) {
+    const latestReps = avgVal(validSets(latestSess));
+    const prevReps   = avgVal(validSets(prevSess));
+    if (latestReps > prevReps)      trend = '📈 Improving';
+    else if (latestReps < prevReps) trend = '📉 Dropped';
+    else                            trend = '➡️ Steady';
+  } else {
+    const latestVol = avgVolume(validSets(latestSess));
+    const prevVol   = avgVolume(validSets(prevSess));
+    if (latestVol > prevVol)      trend = '📈 Improving';
+    else if (latestVol < prevVol) trend = '📉 Dropped';
+    else                          trend = '➡️ Steady';
+  }
 
   let summaryHTML = `
     <div class="stat-card" style="padding:14px 18px; flex:1; min-width:130px;">
@@ -1627,25 +1653,6 @@ function initBalanceTab() {
     }
   });
 
-  // Balance insight
-  const least = muscleLabels[muscleLabels.length-1];
-  const most = muscleLabels[0];
-  document.getElementById('balance-insight').innerHTML = `
-    <div class="insight-card-title">💡 Balance Takeaway</div>
-    <div class="flag blue">
-      <div class="flag-icon">📌</div>
-      <div class="flag-text">
-        <div class="flag-title">Most trained: ${most} (${setsPerMuscle[most]} sets)</div>
-        <div class="flag-desc">Your PT is giving ${most.toLowerCase()} a lot of attention — great for building a strong foundation.</div>
-      </div>
-    </div>
-    <div class="flag orange">
-      <div class="flag-icon">⚠️</div>
-      <div class="flag-text">
-        <div class="flag-title">Least trained: ${least} (${setsPerMuscle[least]||0} sets)</div>
-        <div class="flag-desc">${least} is getting the least volume. Worth mentioning to your PT if you want more focus here.</div>
-      </div>
-    </div>`;
 }
 
 // ============================================================
@@ -1745,7 +1752,65 @@ function initInsightsTab() {
   const recoveryEl = document.getElementById('recovery-analysis');
   const recsEl = document.getElementById('recommendations');
   const restEl = document.getElementById('rest-timeline');
+  const statusEl = document.getElementById('recovery-status');
   if (overloadEl.children.length > 0) return;
+
+  // --- Muscle Recovery Status ---
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  // Find last trained date per muscle group
+  const lastTrained = {};
+  SESSIONS.forEach(s => {
+    const d = new Date(s.date);
+    s.exercises.forEach(ex => {
+      const m = ex.muscle;
+      if (!lastTrained[m] || d > lastTrained[m].date) {
+        lastTrained[m] = { date: d, focus: s.focus, sessionId: s.id };
+      }
+    });
+  });
+
+  const muscleOrder = ['Chest','Back','Shoulders','Legs','Arms','Biceps','Triceps','Core'];
+  let statusHTML = '<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-top:4px;">';
+
+  muscleOrder.forEach(muscle => {
+    if (!lastTrained[muscle]) return;
+    const daysSince = Math.floor((today - lastTrained[muscle].date) / (1000*60*60*24));
+    let statusLabel, statusColor, bgColor, borderColor, icon;
+
+    if (daysSince === 0) {
+      statusLabel = 'Just trained'; icon = '🔥';
+      statusColor = '#f87171'; bgColor = 'rgba(239,68,68,0.10)'; borderColor = 'rgba(239,68,68,0.28)';
+    } else if (daysSince === 1) {
+      statusLabel = 'Recovering'; icon = '⏳';
+      statusColor = '#fb923c'; bgColor = 'rgba(251,146,60,0.10)'; borderColor = 'rgba(251,146,60,0.28)';
+    } else if (daysSince === 2) {
+      statusLabel = 'Almost ready'; icon = '🌀';
+      statusColor = '#facc15'; bgColor = 'rgba(250,204,21,0.10)'; borderColor = 'rgba(250,204,21,0.28)';
+    } else if (daysSince <= 5) {
+      statusLabel = 'Ready'; icon = '✅';
+      statusColor = '#4ade80'; bgColor = 'rgba(74,222,128,0.10)'; borderColor = 'rgba(74,222,128,0.28)';
+    } else {
+      statusLabel = 'Well rested'; icon = '💤';
+      statusColor = '#60a5fa'; bgColor = 'rgba(96,165,250,0.10)'; borderColor = 'rgba(96,165,250,0.28)';
+    }
+
+    const muscleColor = MUSCLE_COLORS[muscle] || '#888';
+    statusHTML += `
+      <div style="background:${bgColor}; border:1px solid ${borderColor}; border-radius:14px; padding:12px 14px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+          <div style="font-size:12px; font-weight:600; color:${muscleColor};">${muscle}</div>
+          <div style="font-size:16px;">${icon}</div>
+        </div>
+        <div style="font-size:13px; font-weight:600; color:${statusColor};">${statusLabel}</div>
+        <div style="font-size:11px; color:var(--muted); margin-top:2px;">${daysSince === 0 ? 'Today' : daysSince === 1 ? 'Yesterday' : `${daysSince} days ago`}</div>
+      </div>`;
+  });
+
+  statusHTML += '</div>';
+  statusHTML += `<div style="font-size:11px; color:var(--muted); margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">Based on sessions logged up to ${today.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'})} — update whenever you add a new session.</div>`;
+  statusEl.innerHTML = statusHTML;
 
   // --- Progressive Overload Flags ---
   const exHistory = {};
