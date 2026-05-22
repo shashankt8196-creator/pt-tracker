@@ -1809,7 +1809,7 @@ function initInsightsTab() {
   });
 
   statusHTML += '</div>';
-  statusHTML += `<div style="font-size:11px; color:var(--muted); margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">Based on sessions logged up to ${today.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'})} — update whenever you add a new session.</div>`;
+  statusHTML += `<div style="font-size:11px; color:var(--muted); margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">Updates automatically each day — reflects how your body is recovering right now.</div>`;
   statusEl.innerHTML = statusHTML;
 
   // --- Progressive Overload Flags ---
@@ -1931,6 +1931,20 @@ function initInsightsTab() {
 // ============================================================
 initOverview();
 initSessions();
+
+// Auto-refresh recovery status when tab becomes visible after midnight
+let _lastDate = new Date().toDateString();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    const todayStr = new Date().toDateString();
+    if (todayStr !== _lastDate) {
+      _lastDate = todayStr;
+      // Reset insights so recovery status recalculates with new date
+      const overloadEl = document.getElementById('overload-flags');
+      if (overloadEl) overloadEl.innerHTML = '';
+    }
+  }
+});
 </script>
 
 </body>
