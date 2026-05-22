@@ -639,7 +639,7 @@ body::before {
     <div class="header-title">Shashank's PT Tracker</div>
     <div class="header-sub">Personal Training Journal · Started April 2026</div>
   </div>
-  <div class="header-badge">9 SESSIONS</div>
+  <div class="header-badge" id="header-badge">— SESSIONS</div>
 </div>
 
 <div class="tabs">
@@ -658,7 +658,7 @@ body::before {
     <div class="stat-grid">
       <div class="stat-card">
         <div class="stat-label">Total Sessions</div>
-        <div class="stat-value" style="color:#4ade80" id="ov-total">9</div>
+        <div class="stat-value" style="color:#4ade80" id="ov-total">—</div>
         <div class="stat-sub">Since Apr 27, 2026</div>
       </div>
       <div class="stat-card">
@@ -1020,6 +1020,8 @@ function initOverview() {
   }).length;
   const last = SESSIONS[SESSIONS.length - 1];
   const lastD = new Date(last.date);
+  document.getElementById('ov-total').textContent = SESSIONS.length;
+  document.getElementById('header-badge').textContent = `${SESSIONS.length} SESSIONS`;
   document.getElementById('ov-month').textContent = thisMonth;
   document.getElementById('ov-last').textContent = lastD.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
   document.getElementById('ov-last-sub').textContent = `${last.focus} — Session ${last.id}`;
