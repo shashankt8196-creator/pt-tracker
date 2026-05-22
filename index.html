@@ -712,6 +712,7 @@ body::before {
   <div id="tab-progress" class="tab-panel">
     <div class="section-title">📈 Exercise Progression</div>
     <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">Track how your weight and reps evolve for each exercise across sessions.</p>
+    <div id="progress-pills" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;"></div>
     <select class="styled-select" id="exercise-select" onchange="renderProgressChart()">
       <option value="">— Select an exercise —</option>
     </select>
@@ -1283,24 +1284,59 @@ function initProgressTab() {
   // Build volume chart
   buildVolumeChart();
 
-  // Collect multi-session exercises
+  // Collect exercises
   const exMap = {};
   SESSIONS.forEach(s => {
     s.exercises.forEach(ex => {
       if (!exMap[ex.name]) exMap[ex.name] = [];
-      exMap[ex.name].push({session: s.id, date: s.date, sets: ex.sets, muscle: ex.muscle});
+      exMap[ex.name].push({session: s.id, date: s.date, sets: ex.sets, muscle: ex.muscle, assisted: !!ex.assisted});
     });
   });
-
-  Object.keys(exMap).sort().forEach(name => {
-    if (exMap[name].length >= 1) {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name + (exMap[name].length > 1 ? ` (${exMap[name].length} sessions)` : '');
-      sel.appendChild(opt);
-    }
-  });
   window._exMap = exMap;
+
+  // Build muscle filter pills
+  const muscles = ['All', ...Object.keys(MUSCLE_COLORS).filter(m =>
+    Object.values(exMap).some(arr => arr[0].muscle === m)
+  )];
+  const pillWrap = document.getElementById('progress-pills');
+  pillWrap.innerHTML = '';
+  muscles.forEach(m => {
+    const pill = document.createElement('button');
+    pill.className = 'filter-pill' + (m === 'All' ? ' active' : '');
+    pill.textContent = m;
+    if (m !== 'All' && MUSCLE_COLORS[m]) {
+      pill.style.setProperty('--pill-accent', MUSCLE_COLORS[m]);
+    }
+    pill.onclick = () => {
+      document.querySelectorAll('#progress-pills .filter-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      window._progressFilter = m;
+      populateProgressSelect();
+    };
+    pillWrap.appendChild(pill);
+  });
+
+  window._progressFilter = 'All';
+  populateProgressSelect();
+}
+
+function populateProgressSelect() {
+  const sel = document.getElementById('exercise-select');
+  const filter = window._progressFilter || 'All';
+  sel.innerHTML = '<option value="">— Select an exercise —</option>';
+
+  Object.keys(window._exMap).sort().forEach(name => {
+    const arr = window._exMap[name];
+    if (filter !== 'All' && arr[0].muscle !== filter) return;
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name + (arr.length > 1 ? ` (${arr.length} sessions)` : '');
+    sel.appendChild(opt);
+  });
+
+  // Reset chart when filter changes
+  document.getElementById('progress-chart-wrap').style.display = 'none';
+  document.getElementById('progress-empty').style.display = 'block';
 }
 
 function renderProgressChart() {
