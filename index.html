@@ -722,9 +722,6 @@ window.addEventListener('load', () => {
   <button class="tab active" onclick="showTab('overview', this)"><span class="tab-label">📊 Overview</span></button>
   <button class="tab" onclick="showTab('sessions', this)"><span class="tab-label">📅 Sessions</span></button>
   <button class="tab" onclick="showTab('progress', this)"><span class="tab-label">📈 Progress</span></button>
-  <button class="tab" onclick="showTab('balance', this)"><span class="tab-label">🎯 Balance</span></button>
-  <button class="tab" onclick="showTab('records', this)"><span class="tab-label">🏆 Records</span></button>
-  <button class="tab" onclick="showTab('insights', this)"><span class="tab-label">⚡ Insights</span></button>
 </div>
 
 <div class="content">
@@ -807,61 +804,6 @@ window.addEventListener('load', () => {
     </div>
   </div>
 
-  <!-- ======= BALANCE ======= -->
-  <div id="tab-balance" class="tab-panel">
-    <div class="section-title">🎯 Muscle Group Balance</div>
-    <p style="font-size:13px; color:var(--muted); margin-bottom:20px;">See which muscles are getting the most attention and which need more love.</p>
-    <div class="chart-grid">
-      <div class="chart-container">
-        <div class="section-title" style="font-size:13px;">Sessions per Focus Area</div>
-        <div class="chart-wrap"><canvas id="focusDonut"></canvas></div>
-      </div>
-      <div class="chart-container">
-        <div class="section-title" style="font-size:13px;">Sets per Muscle Group</div>
-        <div class="chart-wrap"><canvas id="setsBar"></canvas></div>
-      </div>
-    </div>
-    <div class="chart-container">
-      <div class="section-title" style="font-size:13px;">Muscle Balance Radar</div>
-      <div class="chart-wrap" style="height:320px;"><canvas id="radarChart"></canvas></div>
-    </div>
-  </div>
-
-  <!-- ======= RECORDS ======= -->
-  <div id="tab-records" class="tab-panel">
-    <div class="section-title">🏆 Personal Records</div>
-    <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">Your best ever performance per exercise. Keep pushing these!</p>
-    <div id="pr-filters" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;"></div>
-    <div class="pr-grid" id="pr-grid"></div>
-    <div id="pr-empty" style="display:none; color:var(--muted); font-size:14px; padding:20px 0; text-align:center;">No records for this group yet.</div>
-  </div>
-
-  <!-- ======= INSIGHTS ======= -->
-  <div id="tab-insights" class="tab-panel">
-    <div class="section-title">⚡ Smart Insights</div>
-
-    <div class="insight-card" style="margin-bottom:20px;">
-      <div class="insight-card-title">🟢 Muscle Recovery Status</div>
-      <div id="recovery-status"></div>
-    </div>
-
-    <div class="insight-grid">
-      <div class="insight-card">
-        <div class="insight-card-title">🚀 Progressive Overload Flags</div>
-        <div id="overload-flags"></div>
-      </div>
-      <div class="insight-card">
-        <div class="insight-card-title">😴 Rest & Recovery</div>
-        <div id="recovery-analysis"></div>
-        <div id="rest-timeline" style="margin-top:16px;"></div>
-      </div>
-    </div>
-
-    <div class="insight-card" style="margin-bottom:20px;">
-      <div class="insight-card-title">💡 Recommendations</div>
-      <div id="recommendations"></div>
-    </div>
-  </div>
 
 </div><!-- end content -->
 
@@ -1220,68 +1162,73 @@ function renderSLT(focus) {
     el.innerHTML = `<div class="chart-container" style="color:var(--muted); font-size:13px; padding:20px;">No ${focus} sessions logged yet.</div>`;
     return;
   }
-  const latest = typed[typed.length - 1];
-  const prev = typed.length >= 2 ? typed[typed.length - 2] : null;
+  const s2 = typed[typed.length - 1];
+  const s1 = typed.length >= 2 ? typed[typed.length - 2] : null;
 
-  let html = `<div class="chart-container" style="padding:16px 20px;">`;
-  html += `<div style="font-size:12px; color:var(--muted); margin-bottom:16px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:4px;">
-    <span>📍 Session ${latest.id} &nbsp;·&nbsp; ${fmtDate(latest.date)}</span>
-    ${prev ? `<span style="opacity:0.5;">vs Session ${prev.id} · ${fmtDate(prev.date)}</span>` : '<span style="opacity:0.5;">First session</span>'}
+  // Union of all exercise names from both sessions
+  const allNames = [...new Set([
+    ...s2.exercises.map(e => e.name),
+    ...(s1 ? s1.exercises.map(e => e.name) : [])
+  ])];
+
+  const fmtEx = (sessionObj, name) => {
+    if (!sessionObj) return null;
+    const ex = sessionObj.exercises.find(e => e.name === name);
+    if (!ex) return null;
+    const valid = ex.sets.filter(s => !s.fail && s.r > 0);
+    if (!valid.length) return null;
+    const isBW = valid.every(s => s.w === 0);
+    const w = ex.assisted ? Math.min(...valid.map(s=>s.w)) : Math.max(...valid.map(s=>s.w));
+    const wStr = isBW ? 'BW' : ex.assisted ? `${w}kg assist` : `${w}kg`;
+    const rStr = valid.map(s => s.r).join(' · ');
+    return { wStr, rStr, w, total: valid.reduce((a,s)=>a+s.r,0), isBW, assisted: !!ex.assisted, muscle: ex.muscle, mod: ex.mod };
+  };
+
+  const getTrend = (d2, d1) => {
+    if (!d2 || !d1) return null;
+    let improved = false, worse = false;
+    if (!d2.isBW) {
+      improved = d2.assisted ? d2.w < d1.w : d2.w > d1.w;
+      worse    = d2.assisted ? d2.w > d1.w : d2.w < d1.w;
+    }
+    if (!improved && !worse) { improved = d2.total > d1.total; worse = d2.total < d1.total; }
+    return { arrow: improved ? '↑' : worse ? '↓' : '→', color: improved ? '#4ade80' : worse ? '#ef4444' : '#fb923c' };
+  };
+
+  let html = `<div class="chart-container" style="padding:0; overflow:hidden;">`;
+  // Header
+  html += `<div style="display:grid; grid-template-columns:1fr 28px 1fr; padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);">
+    <div style="font-size:12px; font-weight:700; color:#fff;">S${s2.id} &nbsp;<span style="font-weight:400; color:var(--muted);">${fmtDate(s2.date)}</span></div>
+    <div></div>
+    <div style="font-size:12px; font-weight:700; color:rgba(255,255,255,0.4); text-align:right;">${s1 ? `S${s1.id} &nbsp;${fmtDate(s1.date)}` : 'No previous'}</div>
   </div>`;
 
-  latest.exercises.forEach(ex => {
-    const validSets = ex.sets.filter(s => !s.fail && s.r > 0);
-    if (!validSets.length) return;
-    const prevEx = prev ? prev.exercises.find(e => e.name === ex.name) : null;
-    const prevValid = prevEx ? prevEx.sets.filter(s => !s.fail && s.r > 0) : [];
-    const isBW = validSets.every(s => s.w === 0);
-    const curW = ex.assisted ? Math.min(...validSets.map(s=>s.w)) : Math.max(...validSets.map(s=>s.w));
-    const curReps = validSets.map(s=>s.r).join(', ');
-    const curTotal = validSets.reduce((a,s)=>a+s.r,0);
-
-    let arrow = '—', arrowColor = 'var(--muted)';
-    let prevWLabel = '', prevTotalStr = '';
-
-    if (prevValid.length) {
-      const prevW = ex.assisted ? Math.min(...prevValid.map(s=>s.w)) : Math.max(...prevValid.map(s=>s.w));
-      const prevTotal = prevValid.reduce((a,s)=>a+s.r,0);
-      prevWLabel = isBW ? 'BW' : ex.assisted ? `${prevW}kg assist` : `${prevW}kg`;
-      prevTotalStr = `${prevTotal} reps`;
-      let improved = false, worse = false;
-      if (!isBW) {
-        improved = ex.assisted ? curW < prevW : curW > prevW;
-        worse   = ex.assisted ? curW > prevW : curW < prevW;
-      }
-      if (!improved && !worse) {
-        improved = curTotal > prevTotal;
-        worse    = curTotal < prevTotal;
-      }
-      arrow = improved ? '↑' : worse ? '↓' : '→';
-      arrowColor = improved ? '#4ade80' : worse ? '#ef4444' : '#fb923c';
-    }
-
-    const color = MUSCLE_COLORS[ex.muscle] || '#888';
-    const weightLabel = isBW ? 'BW' : ex.assisted ? `${curW}kg assist` : `${curW}kg`;
+  allNames.forEach(name => {
+    const d2 = fmtEx(s2, name);
+    const d1 = fmtEx(s1, name);
+    const trend = getTrend(d2, d1);
+    const color = (d2 || d1) ? (MUSCLE_COLORS[(d2||d1).muscle] || '#888') : '#888';
+    const mod = (d2||d1) ? (d2||d1).mod : '';
 
     html += `
-      <div style="display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid rgba(255,255,255,0.06);">
-        <div style="width:3px; height:36px; border-radius:2px; background:${color}; flex-shrink:0;"></div>
-        <div style="flex:1; min-width:0;">
-          <div style="font-size:13px; font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${ex.name}</div>
-          <div style="font-size:11px; color:var(--muted); margin-top:1px;">${ex.mod}</div>
+      <div style="display:grid; grid-template-columns:1fr 28px 1fr; gap:4px; padding:11px 16px; border-bottom:1px solid rgba(255,255,255,0.05); align-items:start;">
+        <div>
+          <div style="font-size:12px; font-weight:600; color:#fff; margin-bottom:1px;">${name}</div>
+          <div style="font-size:10px; color:var(--muted); margin-bottom:5px;">${mod}</div>
+          ${d2
+            ? `<div style="font-size:13px; font-weight:700; color:${color};">${d2.wStr}</div>
+               <div style="font-size:11px; color:var(--muted);">${d2.rStr}</div>`
+            : `<div style="font-size:11px; color:rgba(255,255,255,0.2); font-style:italic; padding-top:4px;">Not done</div>`}
         </div>
-        <div style="text-align:right; min-width:80px;">
-          <div style="font-size:13px; font-weight:700; color:${color};">${weightLabel}</div>
-          <div style="font-size:11px; color:var(--muted);">${curReps}</div>
+        <div style="display:flex; align-items:center; justify-content:center; padding-top:20px;">
+          ${trend ? `<span style="font-size:15px; font-weight:700; color:${trend.color};">${trend.arrow}</span>` : `<span style="color:rgba(255,255,255,0.15); font-size:12px;">·</span>`}
         </div>
-        ${prevValid.length ? `
-        <div style="text-align:center; min-width:24px;">
-          <div style="font-size:20px; font-weight:700; color:${arrowColor}; line-height:1;">${arrow}</div>
+        <div style="text-align:right; opacity:${d1 ? '0.5' : '0.25'};">
+          ${d1
+            ? `<div style="font-size:13px; font-weight:700; color:#fff; margin-top:17px;">${d1.wStr}</div>
+               <div style="font-size:11px; color:var(--muted);">${d1.rStr}</div>`
+            : `<div style="font-size:11px; font-style:italic; color:rgba(255,255,255,0.3); padding-top:22px;">Not done</div>`}
         </div>
-        <div style="text-align:right; min-width:80px; opacity:0.4;">
-          <div style="font-size:12px; color:#fff;">${prevWLabel}</div>
-          <div style="font-size:11px; color:var(--muted);">${prevTotalStr}</div>
-        </div>` : `<div style="min-width:104px; font-size:11px; color:var(--muted); text-align:right;">First session</div>`}
       </div>`;
   });
 
@@ -1330,10 +1277,10 @@ function initMuscleFrequency() {
 // OVERVIEW PRs
 // ============================================================
 const ovPrData = {};
-let ovPrFilter = 'All';
+let ovPrFilter = null;
 
 function initOvPRs() {
-  if (Object.keys(ovPrData).length) { renderOvPRCards(); return; }
+  if (Object.keys(ovPrData).length) return;
   SESSIONS.forEach(s => {
     s.exercises.forEach(ex => {
       const validSets = ex.sets.filter(st => !st.fail && st.r > 0);
@@ -1349,16 +1296,24 @@ function initOvPRs() {
       if (isBetter) ovPrData[ex.name] = { weight: bestW, reps: maxR, muscle: ex.muscle, date: s.date, session: s.id, assisted: isAssisted };
     });
   });
-  // Filter pills
+
   const filtersEl = document.getElementById('ov-pr-filters');
   const muscleColors = {'Chest':'#4ade80','Back':'#60a5fa','Legs':'#fb923c','Shoulders':'#c084fc','Arms':'#f472b6','Core':'#34d399','Biceps':'#f9a8d4','Triceps':'#a78bfa'};
-  const muscles = ['All',...new Set(Object.values(ovPrData).map(p=>p.muscle))].sort((a,b)=>a==='All'?-1:b==='All'?1:a.localeCompare(b));
+  const muscles = [...new Set(Object.values(ovPrData).map(p=>p.muscle))].sort();
+
   muscles.forEach(m => {
     const pill = document.createElement('button');
-    pill.className = 'filter-pill' + (m==='All'?' active':'');
-    pill.textContent = m==='All'?'🏅 All':m;
-    if (m!=='All' && muscleColors[m]) pill.style.setProperty('--pill-color', muscleColors[m]);
+    pill.className = 'filter-pill';
+    pill.textContent = m;
+    if (muscleColors[m]) pill.style.setProperty('--pill-color', muscleColors[m]);
     pill.onclick = () => {
+      if (ovPrFilter === m) {
+        // toggle off
+        ovPrFilter = null;
+        pill.classList.remove('active');
+        document.getElementById('ov-pr-grid').innerHTML = '';
+        return;
+      }
       document.querySelectorAll('#ov-pr-filters .filter-pill').forEach(p=>p.classList.remove('active'));
       pill.classList.add('active');
       ovPrFilter = m;
@@ -1366,14 +1321,14 @@ function initOvPRs() {
     };
     filtersEl.appendChild(pill);
   });
-  renderOvPRCards();
+  // Start collapsed — no cards rendered
 }
 
 function renderOvPRCards() {
   const grid = document.getElementById('ov-pr-grid');
   grid.innerHTML = '';
   const muscleColors = {'Chest':'#4ade80','Back':'#60a5fa','Legs':'#fb923c','Shoulders':'#c084fc','Arms':'#f472b6','Core':'#34d399','Biceps':'#f9a8d4','Triceps':'#a78bfa'};
-  const filtered = Object.keys(ovPrData).filter(n=>ovPrFilter==='All'||ovPrData[n].muscle===ovPrFilter).sort();
+  const filtered = Object.keys(ovPrData).filter(n => ovPrData[n].muscle === ovPrFilter).sort();
   if (!filtered.length) { grid.innerHTML='<div style="color:var(--muted);font-size:13px;padding:12px 0;">No records yet.</div>'; return; }
   filtered.forEach(name => {
     const pr = ovPrData[name];
