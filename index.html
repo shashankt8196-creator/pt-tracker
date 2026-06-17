@@ -754,28 +754,19 @@ window.addEventListener('load', () => {
       </div>
     </div>
 
-    <div class="section-title">📅 Session Calendar</div>
-    <div class="chart-container" style="padding:18px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
-        <button class="cal-nav-btn" id="cal-prev" onclick="calChangeMonth(-1)">‹</button>
-        <div style="font-size:14px; font-weight:600;" id="cal-month-label"></div>
-        <button class="cal-nav-btn" id="cal-next" onclick="calChangeMonth(1)">›</button>
-      </div>
-      <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:4px;">
-        <div class="cal-wd">M</div><div class="cal-wd">T</div><div class="cal-wd">W</div>
-        <div class="cal-wd">T</div><div class="cal-wd">F</div><div class="cal-wd">S</div><div class="cal-wd">S</div>
-      </div>
-      <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px;" id="cal-grid"></div>
-      <div id="cal-insight-panel"></div>
-      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.08);">
-        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#4ade80"></div>Chest</div>
-        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#60a5fa"></div>Back</div>
-        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#fb923c"></div>Legs</div>
-        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#c084fc"></div>Shoulders</div>
-        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#f472b6"></div>Arms</div>
-        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#34d399"></div>Core</div>
-      </div>
-    </div>
+    <!-- SINCE LAST TIME -->
+    <div class="section-title" style="margin-top:8px;">🔄 Since Last Time</div>
+    <div id="slt-pills" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;"></div>
+    <div id="slt-content"></div>
+
+    <!-- MUSCLE FREQUENCY -->
+    <div class="section-title" style="margin-top:28px;">📅 Last 4 Weeks</div>
+    <div class="chart-container" id="ov-freq-container" style="padding:20px;"></div>
+
+    <!-- PERSONAL RECORDS -->
+    <div class="section-title" style="margin-top:28px;">🏆 Personal Records</div>
+    <div id="ov-pr-filters" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;"></div>
+    <div class="pr-grid" id="ov-pr-grid"></div>
   </div>
 
   <!-- ======= SESSIONS ======= -->
@@ -1194,6 +1185,212 @@ function showTab(id, btn) {
 const MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 let calYear, calMonth, calSelected = null;
 
+// ============================================================
+// SINCE LAST TIME
+// ============================================================
+const SLT_GROUPS = ['Chest','Back','Arms','Legs','Shoulders','Core'];
+let sltActive = null;
+
+function initSinceLastTime() {
+  const pillsEl = document.getElementById('slt-pills');
+  if (pillsEl.children.length) return;
+  const lastFocus = SESSIONS[SESSIONS.length-1].focus;
+  sltActive = SLT_GROUPS.includes(lastFocus) ? lastFocus : 'Back';
+  SLT_GROUPS.forEach(f => {
+    const pill = document.createElement('button');
+    pill.className = 'filter-pill' + (f === sltActive ? ' active' : '');
+    pill.textContent = f;
+    const c = FOCUS_COLORS[f] || '#888';
+    pill.style.setProperty('--pill-color', c);
+    pill.onclick = () => {
+      document.querySelectorAll('#slt-pills .filter-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      sltActive = f;
+      renderSLT(f);
+    };
+    pillsEl.appendChild(pill);
+  });
+  renderSLT(sltActive);
+}
+
+function renderSLT(focus) {
+  const el = document.getElementById('slt-content');
+  const typed = SESSIONS.filter(s => s.focus === focus);
+  if (!typed.length) {
+    el.innerHTML = `<div class="chart-container" style="color:var(--muted); font-size:13px; padding:20px;">No ${focus} sessions logged yet.</div>`;
+    return;
+  }
+  const latest = typed[typed.length - 1];
+  const prev = typed.length >= 2 ? typed[typed.length - 2] : null;
+
+  let html = `<div class="chart-container" style="padding:16px 20px;">`;
+  html += `<div style="font-size:12px; color:var(--muted); margin-bottom:16px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:4px;">
+    <span>📍 Session ${latest.id} &nbsp;·&nbsp; ${fmtDate(latest.date)}</span>
+    ${prev ? `<span style="opacity:0.5;">vs Session ${prev.id} · ${fmtDate(prev.date)}</span>` : '<span style="opacity:0.5;">First session</span>'}
+  </div>`;
+
+  latest.exercises.forEach(ex => {
+    const validSets = ex.sets.filter(s => !s.fail && s.r > 0);
+    if (!validSets.length) return;
+    const prevEx = prev ? prev.exercises.find(e => e.name === ex.name) : null;
+    const prevValid = prevEx ? prevEx.sets.filter(s => !s.fail && s.r > 0) : [];
+    const isBW = validSets.every(s => s.w === 0);
+    const curW = ex.assisted ? Math.min(...validSets.map(s=>s.w)) : Math.max(...validSets.map(s=>s.w));
+    const curReps = validSets.map(s=>s.r).join(', ');
+    const curTotal = validSets.reduce((a,s)=>a+s.r,0);
+
+    let arrow = '—', arrowColor = 'var(--muted)';
+    let prevWLabel = '', prevTotalStr = '';
+
+    if (prevValid.length) {
+      const prevW = ex.assisted ? Math.min(...prevValid.map(s=>s.w)) : Math.max(...prevValid.map(s=>s.w));
+      const prevTotal = prevValid.reduce((a,s)=>a+s.r,0);
+      prevWLabel = isBW ? 'BW' : ex.assisted ? `${prevW}kg assist` : `${prevW}kg`;
+      prevTotalStr = `${prevTotal} reps`;
+      let improved = false, worse = false;
+      if (!isBW) {
+        improved = ex.assisted ? curW < prevW : curW > prevW;
+        worse   = ex.assisted ? curW > prevW : curW < prevW;
+      }
+      if (!improved && !worse) {
+        improved = curTotal > prevTotal;
+        worse    = curTotal < prevTotal;
+      }
+      arrow = improved ? '↑' : worse ? '↓' : '→';
+      arrowColor = improved ? '#4ade80' : worse ? '#ef4444' : '#fb923c';
+    }
+
+    const color = MUSCLE_COLORS[ex.muscle] || '#888';
+    const weightLabel = isBW ? 'BW' : ex.assisted ? `${curW}kg assist` : `${curW}kg`;
+
+    html += `
+      <div style="display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid rgba(255,255,255,0.06);">
+        <div style="width:3px; height:36px; border-radius:2px; background:${color}; flex-shrink:0;"></div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:13px; font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${ex.name}</div>
+          <div style="font-size:11px; color:var(--muted); margin-top:1px;">${ex.mod}</div>
+        </div>
+        <div style="text-align:right; min-width:80px;">
+          <div style="font-size:13px; font-weight:700; color:${color};">${weightLabel}</div>
+          <div style="font-size:11px; color:var(--muted);">${curReps}</div>
+        </div>
+        ${prevValid.length ? `
+        <div style="text-align:center; min-width:24px;">
+          <div style="font-size:20px; font-weight:700; color:${arrowColor}; line-height:1;">${arrow}</div>
+        </div>
+        <div style="text-align:right; min-width:80px; opacity:0.4;">
+          <div style="font-size:12px; color:#fff;">${prevWLabel}</div>
+          <div style="font-size:11px; color:var(--muted);">${prevTotalStr}</div>
+        </div>` : `<div style="min-width:104px; font-size:11px; color:var(--muted); text-align:right;">First session</div>`}
+      </div>`;
+  });
+
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+// ============================================================
+// MUSCLE FREQUENCY (last 4 weeks)
+// ============================================================
+function initMuscleFrequency() {
+  const el = document.getElementById('ov-freq-container');
+  if (!el || el.children.length) return;
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
+  const groups = ['Chest','Back','Arms','Shoulders','Legs','Core'];
+  const counts = {};
+  groups.forEach(g => counts[g] = 0);
+  SESSIONS.forEach(s => {
+    if (new Date(s.date) >= cutoff && groups.includes(s.focus)) counts[s.focus]++;
+  });
+  const maxCount = Math.max(...Object.values(counts), 1);
+  let html = '<div style="display:flex; flex-direction:column; gap:14px;">';
+  groups.forEach(g => {
+    const count = counts[g];
+    const pct = Math.round((count / maxCount) * 100);
+    const color = FOCUS_COLORS[g] || '#888';
+    const statusIcon = count === 0 ? '⚠️' : count === 1 ? '📈' : '✅';
+    const statusLabel = count === 0 ? 'Skipped' : count === 1 ? 'Light' : 'Active';
+    html += `
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:7px;">
+          <span style="font-size:13px; font-weight:600; color:${color};">${g}</span>
+          <span style="font-size:11px; color:var(--muted);">${statusIcon} ${count} session${count!==1?'s':''} &nbsp;·&nbsp; ${statusLabel}</span>
+        </div>
+        <div style="height:7px; background:rgba(255,255,255,0.07); border-radius:4px; overflow:hidden;">
+          <div style="height:100%; width:${pct}%; background:${color}; border-radius:4px; transition:width 0.8s cubic-bezier(0.4,0,0.2,1);"></div>
+        </div>
+      </div>`;
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// ============================================================
+// OVERVIEW PRs
+// ============================================================
+const ovPrData = {};
+let ovPrFilter = 'All';
+
+function initOvPRs() {
+  if (Object.keys(ovPrData).length) { renderOvPRCards(); return; }
+  SESSIONS.forEach(s => {
+    s.exercises.forEach(ex => {
+      const validSets = ex.sets.filter(st => !st.fail && st.r > 0);
+      if (!validSets.length) return;
+      const isAssisted = !!ex.assisted;
+      const bestW = isAssisted ? Math.min(...validSets.map(st=>st.w)) : Math.max(...validSets.map(st=>st.w));
+      const maxR = Math.max(...validSets.map(st=>st.r));
+      const existing = ovPrData[ex.name];
+      const isBetter = !existing ||
+        (!isAssisted && bestW > existing.weight) ||
+        (isAssisted && bestW < existing.weight) ||
+        (bestW === existing.weight && maxR > existing.reps);
+      if (isBetter) ovPrData[ex.name] = { weight: bestW, reps: maxR, muscle: ex.muscle, date: s.date, session: s.id, assisted: isAssisted };
+    });
+  });
+  // Filter pills
+  const filtersEl = document.getElementById('ov-pr-filters');
+  const muscleColors = {'Chest':'#4ade80','Back':'#60a5fa','Legs':'#fb923c','Shoulders':'#c084fc','Arms':'#f472b6','Core':'#34d399','Biceps':'#f9a8d4','Triceps':'#a78bfa'};
+  const muscles = ['All',...new Set(Object.values(ovPrData).map(p=>p.muscle))].sort((a,b)=>a==='All'?-1:b==='All'?1:a.localeCompare(b));
+  muscles.forEach(m => {
+    const pill = document.createElement('button');
+    pill.className = 'filter-pill' + (m==='All'?' active':'');
+    pill.textContent = m==='All'?'🏅 All':m;
+    if (m!=='All' && muscleColors[m]) pill.style.setProperty('--pill-color', muscleColors[m]);
+    pill.onclick = () => {
+      document.querySelectorAll('#ov-pr-filters .filter-pill').forEach(p=>p.classList.remove('active'));
+      pill.classList.add('active');
+      ovPrFilter = m;
+      renderOvPRCards();
+    };
+    filtersEl.appendChild(pill);
+  });
+  renderOvPRCards();
+}
+
+function renderOvPRCards() {
+  const grid = document.getElementById('ov-pr-grid');
+  grid.innerHTML = '';
+  const muscleColors = {'Chest':'#4ade80','Back':'#60a5fa','Legs':'#fb923c','Shoulders':'#c084fc','Arms':'#f472b6','Core':'#34d399','Biceps':'#f9a8d4','Triceps':'#a78bfa'};
+  const filtered = Object.keys(ovPrData).filter(n=>ovPrFilter==='All'||ovPrData[n].muscle===ovPrFilter).sort();
+  if (!filtered.length) { grid.innerHTML='<div style="color:var(--muted);font-size:13px;padding:12px 0;">No records yet.</div>'; return; }
+  filtered.forEach(name => {
+    const pr = ovPrData[name];
+    const color = muscleColors[pr.muscle] || '#888';
+    const isBW = pr.weight === 0;
+    const card = document.createElement('div');
+    card.className = 'pr-card';
+    card.style.borderTop = `2px solid ${color}`;
+    card.innerHTML = `
+      <div class="pr-muscle" style="color:${color};">${pr.muscle}</div>
+      <div class="pr-name">${name}</div>
+      <div class="pr-value" style="color:${color};">${isBW?pr.reps:pr.weight}<span style="font-size:14px;">${isBW?' reps':'kg'}</span></div>
+      <div class="pr-meta">Session ${pr.session} · ${fmtDate(pr.date)}</div>`;
+    grid.appendChild(card);
+  });
+}
+
 function initOverview() {
   // Stat cards
   const now = new Date();
@@ -1215,15 +1412,9 @@ function initOverview() {
   for (let i = 1; i < dates.length; i++) totalRest += Math.round((dates[i] - dates[i-1]) / (1000*60*60*24));
   document.getElementById('ov-avg-rest').textContent = (totalRest / (dates.length - 1)).toFixed(1);
 
-  // Build session date map
-  window._calMap = {};
-  SESSIONS.forEach(s => { window._calMap[s.date] = s; });
-
-  // Start on most recent session's month
-  const latestDate = new Date(last.date);
-  calYear = latestDate.getFullYear();
-  calMonth = latestDate.getMonth();
-  calRender();
+  initSinceLastTime();
+  initMuscleFrequency();
+  initOvPRs();
 }
 
 function calRender() {
