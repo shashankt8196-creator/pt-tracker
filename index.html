@@ -749,7 +749,7 @@ window.addEventListener('load', () => {
       </div>
       <div class="stat-card">
         <div class="stat-label">Avg Rest Days</div>
-        <div class="stat-value" style="color:#fb923c">2.6</div>
+        <div class="stat-value" style="color:#fb923c" id="ov-avg-rest">—</div>
         <div class="stat-sub">Between sessions</div>
       </div>
     </div>
@@ -1208,6 +1208,12 @@ function initOverview() {
   document.getElementById('ov-month').textContent = thisMonth;
   document.getElementById('ov-last').textContent = lastD.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
   document.getElementById('ov-last-sub').textContent = `${last.focus} — Session ${last.id}`;
+
+  // Avg rest days
+  const dates = SESSIONS.map(s => new Date(s.date));
+  let totalRest = 0;
+  for (let i = 1; i < dates.length; i++) totalRest += Math.round((dates[i] - dates[i-1]) / (1000*60*60*24));
+  document.getElementById('ov-avg-rest').textContent = (totalRest / (dates.length - 1)).toFixed(1);
 
   // Build session date map
   window._calMap = {};
