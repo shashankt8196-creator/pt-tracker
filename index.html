@@ -990,7 +990,7 @@ const SESSIONS = [
         sets: [{w:0,r:1},{w:0,r:1},{w:0,r:1}] },
       { name: "Dead Bug Hold with Leg Movement", mod: "Bodyweight", muscle: "Core",
         sets: [{w:0,r:4},{w:0,r:10},{w:0,r:6}] },
-      { name: "Hanging Leg Bends", mod: "Lean against hallway wall", muscle: "Core",
+      { name: "Hanging Leg Bends (Wall)", mod: "Lean against hallway wall", muscle: "Core",
         sets: [{w:0,r:10},{w:0,r:10},{w:0,r:9}] },
       { name: "Hanging Leg Bends", mod: "Freestanding", muscle: "Core",
         sets: [{w:0,r:10},{w:0,r:10},{w:0,r:10}] },
@@ -1005,9 +1005,9 @@ const SESSIONS = [
     exercises: [
       { name: "Push-ups", mod: "On Knees", muscle: "Chest",
         sets: [{w:0,r:15},{w:0,r:10},{w:0,r:7}] },
-      { name: "DB Press", mod: "Decline Bench", muscle: "Chest",
+      { name: "DB Press (Decline)", mod: "Decline Bench", muscle: "Chest",
         sets: [{w:7.5,r:15},{w:7.5,r:15},{w:7.5,r:15}] },
-      { name: "DB Flies", mod: "Decline Bench", muscle: "Chest",
+      { name: "DB Flies (Decline)", mod: "Decline Bench", muscle: "Chest",
         sets: [{w:5,r:15},{w:5,r:15},{w:5,r:15}] },
       { name: "DB Press", mod: "Flat Bench", muscle: "Chest",
         sets: [{w:10,r:7},{w:10,r:6},{w:10,r:5}] },
@@ -1123,7 +1123,7 @@ const SESSIONS = [
         sets: [{w:5,r:15},{w:5,r:15},{w:5,r:20}] },
       { name: "DB Press", mod: "Flat Bench", muscle: "Chest",
         sets: [{w:7.5,r:20},{w:7.5,r:20},{w:7.5,r:15}] },
-      { name: "DB Press", mod: "Decline Bench", muscle: "Chest",
+      { name: "DB Press (Decline)", mod: "Decline Bench", muscle: "Chest",
         sets: [{w:7.5,r:15},{w:7.5,r:10},{w:7.5,r:12}] },
       { name: "DB Pullover", mod: "Flat Bench", muscle: "Chest",
         sets: [{w:10,r:17},{w:10,r:12},{w:10,r:12}] },
@@ -1142,6 +1142,109 @@ const SESSIONS = [
         sets: [{w:5,r:1},{w:5,r:1},{w:5,r:1}] },
       { name: "Half Squat Forward Jumps", mod: "Bodyweight", muscle: "Legs",
         sets: [{w:0,r:15},{w:0,r:15},{w:0,r:15}] },
+    ]
+  },
+  {
+    id: 23, date: "2026-07-13", focus: "Shoulders",
+    exercises: [
+      { name: "Cycling", mod: "Warmup · Air Bike · 5 mins", muscle: "Shoulders",
+        sets: [{w:0,r:1}] },
+      { name: "Face Pull", mod: "Seated Cable · Rope", muscle: "Shoulders",
+        sets: [{w:24,r:20},{w:24,r:20},{w:24,r:15}] },
+      { name: "Lateral Raises", mod: "DB", muscle: "Shoulders",
+        sets: [{w:5,r:15},{w:5,r:15},{w:5,r:12}] },
+      { name: "Front Raises", mod: "DB", muscle: "Shoulders",
+        sets: [{w:5,r:15},{w:5,r:12},{w:5,r:10}] },
+      { name: "Shoulder DB Press", mod: "DB", muscle: "Shoulders",
+        sets: [{w:7.5,r:10},{w:7.5,r:10},{w:7.5,r:8}] },
+    ]
+  },
+  {
+    id: 24, date: "2026-07-15", focus: "Arms",
+    exercises: [
+      { name: "Resistance Band Warmup", mod: "Warmup", muscle: "Arms",
+        sets: [{w:0,r:1}] },
+      { name: "Bicep Curls", mod: "Barbell", muscle: "Biceps",
+        sets: [{w:15,r:15},{w:15,r:8},{w:15,r:8}] },
+      { name: "Pulley Pushdown", mod: "Cable", muscle: "Triceps",
+        sets: [{w:28,r:20},{w:28,r:15},{w:28,r:10}] },
+      { name: "Hammer Curls", mod: "DB", muscle: "Biceps",
+        sets: [{w:5,r:15},{w:5,r:10},{w:5,r:8}] },
+      { name: "Overhead Triceps Extension", mod: "DB · Double Head", muscle: "Triceps",
+        sets: [{w:10,r:20},{w:10,r:15},{w:10,r:15}] },
+    ]
+  },
+  {
+    id: 25, date: "2026-07-24", focus: "Legs",
+    exercises: [
+      { name: "Cycling", mod: "Warmup", muscle: "Legs",
+        sets: [{w:0,r:1}] },
+      { name: "Squats", mod: "KB", muscle: "Legs",
+        sets: [{w:15,r:20},{w:15,r:20},{w:15,r:15}] },
+      { name: "Sumo Squats", mod: "KB", muscle: "Legs",
+        sets: [{w:15,r:15},{w:15,r:10},{w:15,r:6}] },
+      { name: "Walking Lunges", mod: "DB · To & Fro", muscle: "Legs",
+        sets: [{w:7.5,r:1},{w:7.5,r:1},{w:7.5,r:1}] },
+    ]
+  },
+  {
+    id: 26, date: "2026-07-27", focus: "Back",
+    exercises: [
+      { name: "Assisted Pull-ups", mod: "Assisted Machine · 49kg", muscle: "Back", assisted: true,
+        sets: [{w:49,r:15},{w:49,r:7},{w:49,r:8}] },
+      { name: "Assisted Chin-ups", mod: "Assisted Machine · 54kg", muscle: "Back", assisted: true,
+        sets: [{w:54,r:10},{w:54,r:10},{w:54,r:5}] },
+      { name: "Seated Cable Rowing", mod: "Seated Cable", muscle: "Back",
+        sets: [{w:25,r:10},{w:25,r:10},{w:25,r:10}] },
+      { name: "Lat Pull-down", mod: "Machine", muscle: "Back",
+        sets: [{w:25,r:9},{w:25,r:9},{w:25,r:9}] },
+      { name: "Reverse Lat Pull-down", mod: "Machine", muscle: "Back",
+        sets: [{w:20,r:10},{w:20,r:10},{w:20,r:10}] },
+    ]
+  },
+  {
+    id: 27, date: "2026-07-30", focus: "Chest",
+    exercises: [
+      { name: "Push-ups", mod: "On Knees", muscle: "Chest",
+        sets: [{w:0,r:15},{w:0,r:10},{w:0,r:10}] },
+      { name: "DB Press", mod: "Flat Bench", muscle: "Chest",
+        sets: [{w:10,r:10},{w:10,r:10},{w:10,r:15}] },
+      { name: "DB Press (Decline)", mod: "Decline Bench", muscle: "Chest",
+        sets: [{w:10,r:5},{w:10,r:9},{w:10,r:10}] },
+      { name: "Incline Bench Press", mod: "Incline Bench · DB", muscle: "Chest",
+        sets: [{w:7.5,r:10},{w:7.5,r:8},{w:7.5,r:9}] },
+    ]
+  },
+  {
+    id: 28, date: "2026-07-31", focus: "Shoulders",
+    exercises: [
+      { name: "Shoulder Mobility", mod: "Resistance Band", muscle: "Shoulders",
+        sets: [{w:0,r:15}] },
+      { name: "Shoulder DB Press", mod: "Seated · DB", muscle: "Shoulders",
+        sets: [{w:10,r:15},{w:10,r:12},{w:10,r:9}] },
+      { name: "Arnold Press", mod: "Seated · DB", muscle: "Shoulders",
+        sets: [{w:7.5,r:10},{w:7.5,r:10},{w:7.5,r:10}] },
+      { name: "Lateral Raises", mod: "DB", muscle: "Shoulders",
+        sets: [{w:5,r:15},{w:5,r:12},{w:5,r:10}] },
+      { name: "Face Pull", mod: "Seated Cable · Rope", muscle: "Shoulders",
+        sets: [{w:28,r:15},{w:28,r:15},{w:28,r:15}] },
+    ]
+  },
+  {
+    id: 29, date: "2026-08-05", focus: "Core",
+    exercises: [
+      { name: "Cycling", mod: "Warmup", muscle: "Core",
+        sets: [{w:0,r:1}] },
+      { name: "Hanging Leg Bends", mod: "Freestanding", muscle: "Core",
+        sets: [{w:0,r:10},{w:0,r:10},{w:0,r:10}] },
+      { name: "Full Sit-ups", mod: "Bodyweight", muscle: "Core",
+        sets: [{w:0,r:20},{w:0,r:15},{w:0,r:15}] },
+      { name: "Leg Raises", mod: "Bodyweight", muscle: "Core",
+        sets: [{w:0,r:10},{w:0,r:10},{w:0,r:10}] },
+      { name: "Cross Crunches", mod: "Bodyweight", muscle: "Core",
+        sets: [{w:0,r:15},{w:0,r:15},{w:0,r:15}] },
+      { name: "Plank", mod: "Bodyweight · Timed", muscle: "Core",
+        sets: [{w:0,r:1},{w:0,r:1}] },
     ]
   }
 ];
