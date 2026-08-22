@@ -628,6 +628,170 @@ body::before {
 
   /* Radar chart taller on mobile */
   #radarChart { height: 260px; }
+
+  /* Plan tab mobile */
+  .plan-week { gap: 8px !important; }
+  .plan-day { padding: 14px !important; }
+  .plan-day-name { font-size: 12px !important; }
+  .plan-day-where { font-size: 10px !important; }
+  .plan-day-focus { font-size: 11px !important; }
+  .plan-detail-title { font-size: 14px !important; }
+  .plan-exercise-row { padding: 10px 0 !important; }
+}
+
+/* PLAN TAB */
+.plan-week {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.plan-day {
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 16px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.plan-day::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0; width: 3px;
+  border-radius: 3px 0 0 3px;
+}
+.plan-day:hover {
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(255,255,255,0.16);
+}
+.plan-day.today {
+  border-color: rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.10);
+  box-shadow: 0 0 20px rgba(120,50,220,0.15);
+}
+.plan-day.today .plan-day-badge {
+  display: inline-block;
+}
+.plan-day-badge {
+  display: none;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: rgba(74,222,128,0.15);
+  border: 1px solid rgba(74,222,128,0.3);
+  color: #4ade80;
+}
+.plan-day-icon {
+  font-size: 22px;
+  width: 36px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.plan-day-info {
+  flex: 1;
+  min-width: 0;
+}
+.plan-day-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.plan-day-where {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.plan-day-focus {
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 4px;
+}
+.plan-day-chevron {
+  font-size: 14px;
+  color: rgba(255,255,255,0.2);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.plan-day.expanded {
+  border-radius: 16px 16px 0 0;
+  border-bottom-color: transparent;
+}
+.plan-day.expanded .plan-day-chevron {
+  transform: rotate(90deg);
+}
+.plan-detail {
+  display: none;
+  padding: 4px 20px 16px 72px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-top: none;
+  margin-top: -10px;
+  padding-top: 14px;
+  border-radius: 0 0 16px 16px;
+}
+.plan-day.expanded + .plan-detail {
+  display: block;
+}
+.plan-detail-section {
+  margin-top: 14px;
+}
+.plan-detail-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 10px;
+}
+.plan-exercise-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  gap: 12px;
+}
+.plan-exercise-row:last-child { border-bottom: none; }
+.plan-ex-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  flex: 1;
+}
+.plan-ex-detail {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+  white-space: nowrap;
+}
+.plan-ex-cue {
+  font-size: 11px;
+  color: rgba(255,255,255,0.25);
+  font-style: italic;
+  margin-top: 2px;
+}
+.plan-posture-tip {
+  background: rgba(96,165,250,0.08);
+  border: 1px solid rgba(96,165,250,0.15);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 11px;
+  color: rgba(96,165,250,0.8);
+  margin-top: 12px;
+  line-height: 1.5;
 }
 </style>
 </head>
@@ -722,6 +886,7 @@ window.addEventListener('load', () => {
   <button class="tab active" onclick="showTab('overview', this)"><span class="tab-label">📊 Overview</span></button>
   <button class="tab" onclick="showTab('sessions', this)"><span class="tab-label">📅 Sessions</span></button>
   <button class="tab" onclick="showTab('progress', this)"><span class="tab-label">📈 Progress</span></button>
+  <button class="tab" onclick="showTab('plan', this)"><span class="tab-label">🗓️ Plan</span></button>
 </div>
 
 <div class="content">
@@ -804,6 +969,11 @@ window.addEventListener('load', () => {
     </div>
   </div>
 
+
+  <!-- ======= PLAN ======= -->
+  <div id="tab-plan" class="tab-panel">
+    <div id="plan-container"></div>
+  </div>
 
 </div><!-- end content -->
 
@@ -1291,6 +1461,7 @@ function showTab(id, btn) {
   if(id === 'balance') initBalanceTab();
   if(id === 'records') initRecordsTab();
   if(id === 'insights') initInsightsTab();
+  if(id === 'plan') initPlanTab();
 }
 
 // ============================================================
@@ -2440,6 +2611,251 @@ function initInsightsTab() {
 // ============================================================
 initOverview();
 initSessions();
+
+// ============================================================
+// PLAN TAB
+// ============================================================
+const PLAN_SCHEDULE = [
+  {
+    day: 'Monday', where: 'Caliroxx', icon: '🤸',
+    focus: 'Vertical Push + Vertical Pull + Anti-extension Core',
+    color: '#c084fc', tag: 'Pull Skill',
+    detail: {
+      note: 'Follow Caliroxx programming. If class doesn\'t include a rear delt movement, do 2×15 band pull-aparts before you leave.',
+      posture: 'Rounded shoulder fix — pull volume is priority. This class covers it.'
+    }
+  },
+  {
+    day: 'Tuesday', where: 'Anytime Fitness', icon: '🏋️',
+    focus: 'Pull Day — Back + Biceps + Core',
+    color: '#60a5fa', tag: 'Gym',
+    detail: {
+      warmup: [
+        { name: 'Stationary Bike', detail: '3 min easy' },
+        { name: 'Band Pull-aparts', detail: '2×15' },
+        { name: 'Cat-cow', detail: '10 slow reps' }
+      ],
+      exercises: [
+        { name: 'Lat Pulldown', detail: '3×10–12 · 25kg', cue: 'Lean back 10–15° max, bar to collarbone' },
+        { name: 'Seated Cable Row', detail: '3×10–12 · 25kg', cue: 'Sit tall, don\'t round lower back' },
+        { name: 'Face Pull', detail: '3×15 · 28kg', cue: 'Pull to forehead, elbows high, 1-sec pause' },
+        { name: 'Reverse Grip Lat Pulldown', detail: '3×10–12 · 20kg', cue: 'Underhand grip, squeeze at bottom' },
+        { name: 'Bicep Curls (Barbell)', detail: '3×8–10 · 15kg', cue: 'Elbows pinned, zero swinging' },
+        { name: 'Hammer Curls', detail: '2×10–12 · 5kg', cue: 'Neutral grip, controlled' },
+        { name: 'Romanian Deadlift (DB) ⭐', detail: '3×10 · 7.5kg/hand', cue: 'Hips BACK, flat back, film set 1' }
+      ],
+      core: [
+        { name: 'Hanging Leg Bends', detail: '3×10' },
+        { name: 'Dead Bug', detail: '3×8/side' },
+        { name: 'Plank', detail: '2× max hold' }
+      ],
+      posture: 'Face Pull at 28kg + reverse pulldown targets rear delts. RDL rebuilds the hip hinge — film it weekly.'
+    }
+  },
+  {
+    day: 'Wednesday', where: 'Pickleball', icon: '🏓',
+    focus: 'Court session — cardio, footwork, agility',
+    color: '#facc15', tag: 'Active Recovery',
+    detail: {
+      note: 'Just play. Lateral court movement trains legs without a structured session. The footwork and quick direction changes build ankle stability and reactive strength.',
+      posture: 'Stay light on your feet. Don\'t lock your knees between rallies.'
+    }
+  },
+  {
+    day: 'Thursday', where: 'Caliroxx', icon: '🤸',
+    focus: 'Vertical Push + Vertical Pull + Anti-rotation Core',
+    color: '#c084fc', tag: 'Pull Skill',
+    detail: {
+      note: 'Follow Caliroxx programming. Same rule as Monday — if no rear delt work, finish with band pull-aparts.',
+      posture: 'Anti-rotation core work here is exactly what protects your lower back under load.'
+    }
+  },
+  {
+    day: 'Friday', where: 'Anytime Fitness', icon: '🏋️',
+    focus: 'Push Day — Chest + Shoulders + Triceps + Core',
+    color: '#4ade80', tag: 'Gym',
+    detail: {
+      warmup: [
+        { name: 'Stationary Bike', detail: '3 min easy' },
+        { name: 'Band Pull-aparts', detail: '2×15' },
+        { name: 'Cat-cow', detail: '10 slow reps' }
+      ],
+      exercises: [
+        { name: 'DB Press (Flat Bench)', detail: '3×8–10 · 10kg', cue: 'Shoulder blades pinched back & down' },
+        { name: 'Incline DB Press', detail: '3×10 · 7.5kg', cue: 'Elbows at 45°, not flared' },
+        { name: 'Shoulder DB Press (Seated)', detail: '3×8–10 · 10kg', cue: 'Ribs DOWN, back stays on pad' },
+        { name: 'Lateral Raises', detail: '3×12–15 · 5kg', cue: 'Lead with elbows, stop at shoulder height' },
+        { name: 'Cable Pushdown', detail: '3×10–12 · 28kg', cue: 'Chest up, elbows pinned' },
+        { name: 'Face Pull (light)', detail: '2×15 · 20kg', cue: 'Every push day ends with rear delts' },
+        { name: 'Push-ups (On Knees)', detail: '2× max · BW', cue: 'Straight line ear-hip-knee' }
+      ],
+      core: [
+        { name: 'Cable Wood Chop', detail: '3×12/side · 12kg' },
+        { name: 'Cross Crunches', detail: '3×15' },
+        { name: 'Plank', detail: '2× max hold' }
+      ],
+      posture: 'Face Pull on push day keeps shoulders balanced. If lower back arches during shoulder press — the weight is too heavy, drop it.'
+    }
+  },
+  {
+    day: 'Saturday', where: 'Caliroxx', icon: '🤸',
+    focus: 'Lower Body + Athleticism',
+    color: '#fb923c', tag: 'Freestyle',
+    detail: {
+      note: 'Caliroxx lower body day: jumps, crawls, agility, unilateral work. This covers your leg training for the week alongside Wednesday pickleball.',
+      posture: 'Land soft on jumps — knees tracking over toes. If any exercise rounds your lower back, modify or skip it.'
+    }
+  },
+  {
+    day: 'Sunday', where: 'Rest', icon: '😴',
+    focus: 'Full rest or light walk',
+    color: '#888', tag: 'Recovery',
+    detail: {
+      note: 'Full rest. Walk if you want. Doorway chest stretch 30 sec each side ×2. Shoulder blade squeezes 10 reps. That\'s it.',
+      posture: 'Stretch what\'s tight (chest, hip flexors). This is free posture improvement.'
+    }
+  }
+];
+
+function initPlanTab() {
+  const container = document.getElementById('plan-container');
+  if (container.children.length > 0) return;
+
+  const today = new Date();
+  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const todayName = dayNames[today.getDay()];
+
+  // Weekly priority badges
+  let html = `
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
+      <div style="background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.25); border-radius:12px; padding:8px 14px; font-size:11px; color:#34d399;">
+        <span style="font-weight:700;">Core</span> · 5×/week
+      </div>
+      <div style="background:rgba(96,165,250,0.1); border:1px solid rgba(96,165,250,0.25); border-radius:12px; padding:8px 14px; font-size:11px; color:#60a5fa;">
+        <span style="font-weight:700;">Upper</span> · 4×/week
+      </div>
+      <div style="background:rgba(251,146,60,0.1); border:1px solid rgba(251,146,60,0.25); border-radius:12px; padding:8px 14px; font-size:11px; color:#fb923c;">
+        <span style="font-weight:700;">Legs</span> · 2×/week
+      </div>
+    </div>
+  `;
+
+  // Venue key
+  html += `
+    <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:22px; font-size:11px; color:var(--muted);">
+      <span>🤸 Caliroxx</span>
+      <span>🏋️ Anytime Fitness</span>
+      <span>🏓 Pickleball</span>
+      <span>😴 Rest</span>
+    </div>
+  `;
+
+  html += '<div class="plan-week">';
+
+  PLAN_SCHEDULE.forEach((p, i) => {
+    const isToday = p.day === todayName;
+    const d = p.detail;
+
+    // Day card
+    html += `
+      <div class="plan-day${isToday ? ' today' : ''}" onclick="togglePlanDay(this)" style="--plan-color:${p.color};">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:${p.color};border-radius:3px 0 0 3px;"></div>
+        <div class="plan-day-icon">${p.icon}</div>
+        <div class="plan-day-info">
+          <div class="plan-day-name">
+            ${p.day}
+            <span class="plan-day-badge">${isToday ? 'TODAY' : ''}</span>
+          </div>
+          <div class="plan-day-where">${p.where} · <span style="color:${p.color}; font-weight:600;">${p.tag}</span></div>
+          <div class="plan-day-focus" style="color:${p.color};">${p.focus}</div>
+        </div>
+        <div class="plan-day-chevron">›</div>
+      </div>`;
+
+    // Expandable detail
+    html += `<div class="plan-detail">`;
+
+    // Warmup
+    if (d.warmup) {
+      html += `<div class="plan-detail-section">
+        <div class="plan-detail-title">Warm-up</div>`;
+      d.warmup.forEach(ex => {
+        html += `<div class="plan-exercise-row">
+          <div class="plan-ex-name" style="color:var(--muted);">${ex.name}</div>
+          <div class="plan-ex-detail">${ex.detail}</div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // Main exercises
+    if (d.exercises) {
+      html += `<div class="plan-detail-section">
+        <div class="plan-detail-title">Main Workout</div>`;
+      d.exercises.forEach(ex => {
+        html += `<div class="plan-exercise-row" style="flex-wrap:wrap;">
+          <div class="plan-ex-name">${ex.name}</div>
+          <div class="plan-ex-detail">${ex.detail}</div>
+          ${ex.cue ? `<div class="plan-ex-cue" style="width:100%;">${ex.cue}</div>` : ''}
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // Core finisher
+    if (d.core) {
+      html += `<div class="plan-detail-section">
+        <div class="plan-detail-title">Core Finisher</div>`;
+      d.core.forEach(ex => {
+        html += `<div class="plan-exercise-row">
+          <div class="plan-ex-name">${ex.name}</div>
+          <div class="plan-ex-detail">${ex.detail}</div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // Note (for Caliroxx/Pickleball/Rest days)
+    if (d.note) {
+      html += `<div class="plan-detail-section">
+        <div style="font-size:12px; color:rgba(255,255,255,0.5); line-height:1.6;">${d.note}</div>
+      </div>`;
+    }
+
+    // Posture tip
+    if (d.posture) {
+      html += `<div class="plan-posture-tip">💡 ${d.posture}</div>`;
+    }
+
+    html += `</div>`;
+  });
+
+  html += '</div>';
+
+  // Progression reminder
+  html += `
+    <div style="background:rgba(74,222,128,0.06); border:1px solid rgba(74,222,128,0.15); border-radius:14px; padding:16px 20px; margin-top:8px;">
+      <div style="font-size:13px; font-weight:600; color:#4ade80; margin-bottom:6px;">📈 Progression Rule</div>
+      <div style="font-size:12px; color:rgba(255,255,255,0.5); line-height:1.6;">
+        Every gym session, beat the previous one by <strong style="color:#fff;">one rep</strong> or <strong style="color:#fff;">one small weight jump</strong> on at least one exercise. Check "Since Last Time" before each session.
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  // Auto-expand today
+  const todayCard = container.querySelector('.plan-day.today');
+  if (todayCard) todayCard.click();
+}
+
+function togglePlanDay(el) {
+  const wasExpanded = el.classList.contains('expanded');
+  // Collapse all
+  document.querySelectorAll('.plan-day.expanded').forEach(d => d.classList.remove('expanded'));
+  // Toggle clicked
+  if (!wasExpanded) el.classList.add('expanded');
+}
 
 // Auto-refresh recovery status when tab becomes visible after midnight
 let _lastDate = new Date().toDateString();
