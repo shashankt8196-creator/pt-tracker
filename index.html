@@ -1416,6 +1416,57 @@ const SESSIONS = [
       { name: "Plank", mod: "Bodyweight · Timed", muscle: "Core",
         sets: [{w:0,r:1},{w:0,r:1}] },
     ]
+  },
+  {
+    id: 30, date: "2026-08-22", focus: "Mix",
+    exercises: [
+      { name: "Cycling", mod: "Warmup", muscle: "Chest",
+        sets: [{w:0,r:1}] },
+      { name: "DB Press", mod: "Flat Bench", muscle: "Chest",
+        sets: [{w:10,r:15},{w:10,r:15},{w:10,r:15}] },
+      { name: "Incline Bench Press", mod: "Incline Bench · DB", muscle: "Chest",
+        sets: [{w:10,r:11},{w:10,r:11},{w:10,r:8}] },
+      { name: "Lat Pull-down", mod: "Machine", muscle: "Back",
+        sets: [{w:27.5,r:15},{w:53.75,r:9},{w:50,r:8}] },
+      { name: "Bicep Curls", mod: "Barbell", muscle: "Biceps",
+        sets: [{w:15,r:15},{w:15,r:10},{w:15,r:8}] },
+      { name: "Seated Cable Rowing", mod: "High Seated Cable", muscle: "Back",
+        sets: [{w:25,r:15},{w:25,r:15},{w:25,r:15}] },
+    ]
+  },
+  {
+    id: 31, date: "2026-08-31", focus: "Legs",
+    exercises: [
+      { name: "Cycling", mod: "Warmup", muscle: "Legs",
+        sets: [{w:0,r:1}] },
+      { name: "Squats", mod: "KB", muscle: "Legs",
+        sets: [{w:12,r:20},{w:12,r:20},{w:12,r:15}] },
+      { name: "Sumo Squats", mod: "KB", muscle: "Legs",
+        sets: [{w:12,r:15},{w:12,r:20},{w:12,r:15}] },
+      { name: "Seated Leg Curl", mod: "Machine", muscle: "Legs",
+        sets: [{w:47,r:15},{w:47,r:15},{w:47,r:8}] },
+      { name: "Leg Extension", mod: "Machine", muscle: "Legs",
+        sets: [{w:26,r:8},{w:26,r:10},{w:26,r:8}] },
+      { name: "Hip Abductor", mod: "Machine", muscle: "Legs",
+        sets: [{w:63,r:15},{w:63,r:12}] },
+      { name: "Hip Adductor", mod: "Machine", muscle: "Legs",
+        sets: [{w:35,r:10},{w:35,r:10}] },
+    ]
+  },
+  {
+    id: 32, date: "2026-09-03", focus: "Shoulders",
+    exercises: [
+      { name: "Shoulder Mobility", mod: "Resistance Band · Warmup", muscle: "Shoulders",
+        sets: [{w:0,r:15}] },
+      { name: "Shoulder DB Press", mod: "Seated · DB", muscle: "Shoulders",
+        sets: [{w:10,r:15},{w:10,r:15},{w:10,r:10}] },
+      { name: "Arnold Press", mod: "Seated · DB", muscle: "Shoulders",
+        sets: [{w:7.5,r:15},{w:7.5,r:11},{w:7.5,r:10}] },
+      { name: "Lateral Raises", mod: "DB", muscle: "Shoulders",
+        sets: [{w:5,r:15},{w:5,r:15},{w:5,r:10}] },
+      { name: "Face Pull", mod: "Seated Cable · Rope", muscle: "Shoulders",
+        sets: [{w:21.25,r:15},{w:21.25,r:15},{w:21.25,r:10}] },
+    ]
   }
 ];
 
@@ -1440,6 +1491,7 @@ const FOCUS_COLORS = {
   "Core":         "#34d399",
   "Full Body":    "#facc15",
   "Kickboxing":   "#f87171",
+  "Mix":          "#e879f9",
 };
 
 function muscleClass(m) { return m.toLowerCase().replace(/ /g,''); }
